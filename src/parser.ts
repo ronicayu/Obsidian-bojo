@@ -44,6 +44,11 @@ export class BujoParser {
     const files: TFile[] = [];
     const allFiles = this.vault.getMarkdownFiles();
 
+    // If no source folders or files are configured, scan all markdown files
+    if (this.settings.sourceFolders.length === 0 && this.settings.sourceFiles.length === 0) {
+      return allFiles;
+    }
+
     // Add files from source folders
     for (const folder of this.settings.sourceFolders) {
       for (const file of allFiles) {
