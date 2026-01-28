@@ -225,30 +225,33 @@ export class BujoParser {
       content = content.replace(createdRegex, '').trim();
     }
 
+    // Extract time range first (HH:MM-HH:MM or HH:MM - HH:MM)
+    // This must be checked before individual start/end times to avoid partial matches
+    const timeRangeRegex = /(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})/;
+    const timeRangeMatch = text.match(timeRangeRegex);
+    if (timeRangeMatch) {
+      startTime = timeRangeMatch[1];
+      endTime = timeRangeMatch[2];
+      content = content.replace(timeRangeRegex, '').trim();
+    }
+
     // Extract start time (🕐 HH:MM or time:HH:MM or @HH:MM)
-    const startTimeRegex = /(?:🕐|🕑|🕒|🕓|🕔|🕕|🕖|🕗|🕘|🕙|🕚|🕛|time:|@)\s*(\d{1,2}:\d{2})/;
-    const startTimeMatch = text.match(startTimeRegex);
-    if (startTimeMatch) {
-      startTime = startTimeMatch[1];
-      content = content.replace(startTimeRegex, '').trim();
+    if (!startTime) {
+      const startTimeRegex = /(?:🕐|🕑|🕒|🕓|🕔|🕕|🕖|🕗|🕘|🕙|🕚|🕛|time:|@)\s*(\d{1,2}:\d{2})/;
+      const startTimeMatch = text.match(startTimeRegex);
+      if (startTimeMatch) {
+        startTime = startTimeMatch[1];
+        content = content.replace(startTimeRegex, '').trim();
+      }
     }
 
-    // Extract end time (➡️ HH:MM or -HH:MM or end:HH:MM or to:HH:MM)
-    const endTimeRegex = /(?:➡️|end:|to:|-)\s*(\d{1,2}:\d{2})(?!\d)/;
-    const endTimeMatch = text.match(endTimeRegex);
-    if (endTimeMatch) {
-      endTime = endTimeMatch[1];
-      content = content.replace(endTimeRegex, '').trim();
-    }
-
-    // Extract time range (HH:MM-HH:MM or HH:MM - HH:MM)
-    if (!startTime && !endTime) {
-      const timeRangeRegex = /(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})/;
-      const timeRangeMatch = text.match(timeRangeRegex);
-      if (timeRangeMatch) {
-        startTime = timeRangeMatch[1];
-        endTime = timeRangeMatch[2];
-        content = content.replace(timeRangeRegex, '').trim();
+    // Extract end time (➡️ HH:MM or end:HH:MM or to:HH:MM)
+    if (!endTime) {
+      const endTimeRegex = /(?:➡️|end:|to:)\s*(\d{1,2}:\d{2})(?!\d)/;
+      const endTimeMatch = text.match(endTimeRegex);
+      if (endTimeMatch) {
+        endTime = endTimeMatch[1];
+        content = content.replace(endTimeRegex, '').trim();
       }
     }
 
