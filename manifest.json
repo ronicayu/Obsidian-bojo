@@ -1,0 +1,10 @@
+{
+  "id": "obsidian-bojo",
+  "name": "Bullet Journal Todo",
+  "version": "1.0.0",
+  "minAppVersion": "1.5.0",
+  "description": "Consolidate and manage todos from specified files and folders using bullet journal methodology",
+  "author": "Your Name",
+  "authorUrl": "",
+  "isDesktopOnly": false
+}

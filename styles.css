@@ -1,0 +1,371 @@
+/* Bullet Journal Todo Plugin Styles */
+
+/* Container */
+.bojo-container {
+  padding: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header */
+.bojo-header {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--background-modifier-border);
+  background: var(--background-secondary);
+}
+
+.bojo-title {
+  margin: 0 0 12px 0;
+  font-size: 1.1em;
+  font-weight: 600;
+  color: var(--text-normal);
+}
+
+/* Controls */
+.bojo-controls {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.bojo-search {
+  flex: 1;
+}
+
+.bojo-search-input {
+  width: 100%;
+  padding: 6px 10px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  background: var(--background-primary);
+  color: var(--text-normal);
+  font-size: 0.9em;
+}
+
+.bojo-search-input:focus {
+  outline: none;
+  border-color: var(--interactive-accent);
+}
+
+.bojo-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.bojo-btn:hover {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
+.bojo-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Stats */
+.bojo-stats {
+  padding: 8px 16px;
+  display: flex;
+  gap: 16px;
+  font-size: 0.85em;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--background-modifier-border);
+  background: var(--background-secondary-alt);
+}
+
+.bojo-stat {
+  display: flex;
+  gap: 4px;
+}
+
+.bojo-stat strong {
+  color: var(--text-normal);
+}
+
+.bojo-stat-overdue {
+  color: var(--text-error);
+}
+
+.bojo-stat-overdue strong {
+  color: var(--text-error);
+}
+
+.bojo-stat-total {
+  margin-left: auto;
+  color: var(--text-faint);
+}
+
+/* List */
+.bojo-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 0;
+}
+
+.bojo-empty {
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* Groups */
+.bojo-group {
+  margin-bottom: 8px;
+}
+
+.bojo-group-header {
+  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--background-secondary);
+  cursor: pointer;
+  user-select: none;
+}
+
+.bojo-group-header:hover {
+  background: var(--background-modifier-hover);
+}
+
+.bojo-group-name {
+  font-weight: 600;
+  color: var(--text-normal);
+}
+
+.bojo-group-count {
+  color: var(--text-muted);
+  font-size: 0.85em;
+}
+
+.bojo-group-items {
+  padding-left: 0;
+}
+
+/* Items */
+.bojo-item {
+  display: flex;
+  align-items: flex-start;
+  padding: 10px 16px;
+  gap: 10px;
+  border-bottom: 1px solid var(--background-modifier-border);
+  transition: background 0.15s ease;
+}
+
+.bojo-item:hover {
+  background: var(--background-secondary);
+}
+
+/* Status-specific styles */
+.bojo-item-x .bojo-item-text,
+.bojo-item-task_complete .bojo-item-text {
+  text-decoration: line-through;
+  color: var(--text-muted);
+}
+
+.bojo-item-- .bojo-item-text,
+.bojo-item-task_cancelled .bojo-item-text {
+  text-decoration: line-through;
+  color: var(--text-faint);
+}
+
+.bojo-item-> .bojo-item-text::after,
+.bojo-item-task_migrated .bojo-item-text::after {
+  content: ' →';
+  color: var(--text-muted);
+}
+
+.bojo-item-< .bojo-item-text::after,
+.bojo-item-task_scheduled .bojo-item-text::after {
+  content: ' 📅';
+}
+
+/* Priority styles */
+.bojo-priority-3 {
+  border-left: 3px solid var(--text-error);
+}
+
+.bojo-priority-2 {
+  border-left: 3px solid var(--text-warning);
+}
+
+.bojo-priority-1 {
+  border-left: 3px solid var(--text-faint);
+}
+
+/* Checkbox */
+.bojo-checkbox {
+  margin-top: 2px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+/* Item content */
+.bojo-item-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.bojo-item-text {
+  display: block;
+  color: var(--text-normal);
+  cursor: pointer;
+  word-wrap: break-word;
+  line-height: 1.4;
+}
+
+.bojo-item-text:hover {
+  color: var(--text-accent);
+}
+
+/* Metadata row */
+.bojo-item-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+  font-size: 0.8em;
+  color: var(--text-muted);
+}
+
+.bojo-item-file {
+  cursor: pointer;
+  color: var(--text-accent);
+}
+
+.bojo-item-file:hover {
+  text-decoration: underline;
+}
+
+.bojo-item-due {
+  color: var(--text-muted);
+}
+
+.bojo-item-due.bojo-overdue {
+  color: var(--text-error);
+  font-weight: 600;
+}
+
+.bojo-item-tag {
+  color: var(--text-accent);
+  background: var(--background-modifier-hover);
+  padding: 1px 6px;
+  border-radius: 3px;
+}
+
+.bojo-item-priority {
+  font-size: 1em;
+}
+
+/* Actions button */
+.bojo-item-actions {
+  flex-shrink: 0;
+  padding: 4px;
+  border: none;
+  background: transparent;
+  color: var(--text-faint);
+  cursor: pointer;
+  border-radius: 4px;
+  opacity: 0;
+  transition: all 0.15s ease;
+}
+
+.bojo-item:hover .bojo-item-actions {
+  opacity: 1;
+}
+
+.bojo-item-actions:hover {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
+.bojo-item-actions svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* Settings help section */
+.bojo-help {
+  padding: 16px;
+  background: var(--background-secondary);
+  border-radius: 8px;
+  font-size: 0.9em;
+}
+
+.bojo-help p {
+  margin: 0 0 8px 0;
+}
+
+.bojo-help ul {
+  margin: 0 0 12px 0;
+  padding-left: 20px;
+}
+
+.bojo-help li {
+  margin: 4px 0;
+}
+
+.bojo-help code {
+  background: var(--background-primary);
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 0.9em;
+}
+
+/* Dark mode adjustments */
+.theme-dark .bojo-header {
+  background: var(--background-secondary);
+}
+
+.theme-dark .bojo-stats {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+/* Mobile adjustments */
+@media (max-width: 600px) {
+  .bojo-header {
+    padding: 10px 12px;
+  }
+
+  .bojo-item {
+    padding: 8px 12px;
+  }
+
+  .bojo-stats {
+    padding: 6px 12px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .bojo-stat-total {
+    margin-left: 0;
+    width: 100%;
+  }
+}
+
+/* Scrollbar styling */
+.bojo-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.bojo-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.bojo-list::-webkit-scrollbar-thumb {
+  background: var(--background-modifier-border);
+  border-radius: 4px;
+}
+
+.bojo-list::-webkit-scrollbar-thumb:hover {
+  background: var(--text-faint);
+}
