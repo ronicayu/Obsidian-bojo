@@ -193,6 +193,24 @@ export default class BojoPlugin extends Plugin {
       },
     });
 
+    // Mark event as done
+    this.addCommand({
+      id: 'mark-event-done',
+      name: 'Mark Event as Done (O)',
+      editorCallback: (editor: Editor, view: MarkdownView) => {
+        this.toggleTaskAtCursor(editor, BujoSignifier.EVENT_DONE);
+      },
+    });
+
+    // Cancel event
+    this.addCommand({
+      id: 'cancel-event',
+      name: 'Cancel Event (~)',
+      editorCallback: (editor: Editor, view: MarkdownView) => {
+        this.toggleTaskAtCursor(editor, BujoSignifier.EVENT_CANCELLED);
+      },
+    });
+
     // Refresh view
     this.addCommand({
       id: 'refresh-bojo-view',
@@ -259,8 +277,8 @@ export default class BojoPlugin extends Plugin {
     const cursor = editor.getCursor();
     const line = editor.getLine(cursor.line);
 
-    // Check if this is a task/event line
-    const checkboxRegex = /^(\s*[-*]\s+\[)([ x><!oO-])(\].*)$/i;
+    // Check if this is a task/event line (including ~ for cancelled events)
+    const checkboxRegex = /^(\s*[-*]\s+\[)([ xX><!oO~-])(\].*)$/;
     const match = line.match(checkboxRegex);
 
     if (!match) {
@@ -286,7 +304,16 @@ export default class BojoPlugin extends Plugin {
         newMarker = '-';
         break;
       case BujoSignifier.EVENT:
-        newMarker = currentMarker.toLowerCase() === 'o' ? ' ' : 'o';
+        // Toggle between event and task (not event done)
+        newMarker = currentMarker === 'o' ? ' ' : 'o';
+        break;
+      case BujoSignifier.EVENT_DONE:
+        // Toggle between done and pending event
+        newMarker = currentMarker === 'O' ? 'o' : 'O';
+        break;
+      case BujoSignifier.EVENT_CANCELLED:
+        // Toggle between cancelled and pending event
+        newMarker = currentMarker === '~' ? 'o' : '~';
         break;
       default:
         newMarker = ' ';

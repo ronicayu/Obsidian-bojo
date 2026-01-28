@@ -98,8 +98,9 @@ export class BujoParser {
    * Parse a single line for a bullet journal item
    */
   parseLine(line: string, file: TFile, lineNumber: number): BujoItem | null {
-    // Match checkbox patterns: - [ ], - [x], - [>], - [<], - [-], - [o], * [ ], etc.
-    const checkboxRegex = /^(\s*)[-*]\s+\[([ x><!oO-])\]\s*(.*)$/i;
+    // Match checkbox patterns: - [ ], - [x], - [>], - [<], - [-], - [o], - [O], - [~], * [ ], etc.
+    // Note: Don't use 'i' flag to preserve case sensitivity for o vs O
+    const checkboxRegex = /^(\s*)[-*]\s+\[([ xX><!oO~-])\]\s*(.*)$/;
     const match = line.match(checkboxRegex);
 
     if (!match) {
@@ -110,6 +111,9 @@ export class BujoParser {
     const signifier = this.markerToSignifier(marker);
     const { content, tags, dueDate, scheduledDate, priority, recurrence, createdDate, startTime, endTime, location } = this.parseContent(text, signifier);
 
+    // Set completedDate for completed tasks and done events
+    const isCompleted = signifier === BujoSignifier.TASK_COMPLETE || signifier === BujoSignifier.EVENT_DONE;
+
     return {
       id: `${file.path}:${lineNumber}`,
       signifier,
@@ -119,7 +123,7 @@ export class BujoParser {
       dueDate,
       scheduledDate,
       createdDate,
-      completedDate: signifier === BujoSignifier.TASK_COMPLETE ? new Date() : null,
+      completedDate: isCompleted ? new Date() : null,
       file,
       line: lineNumber,
       originalText: line,
@@ -135,6 +139,17 @@ export class BujoParser {
    * Convert marker character to signifier
    */
   private markerToSignifier(marker: string): BujoSignifier {
+    // Handle case-sensitive markers first
+    switch (marker) {
+      case 'o':
+        return BujoSignifier.EVENT;
+      case 'O':
+        return BujoSignifier.EVENT_DONE;
+      case '~':
+        return BujoSignifier.EVENT_CANCELLED;
+    }
+
+    // Handle case-insensitive markers
     const lowerMarker = marker.toLowerCase();
     switch (lowerMarker) {
       case 'x':
@@ -147,8 +162,6 @@ export class BujoParser {
         return BujoSignifier.TASK_CANCELLED;
       case '!':
         return BujoSignifier.INSPIRATION;
-      case 'o':
-        return BujoSignifier.EVENT;
       case ' ':
       default:
         return BujoSignifier.TASK;
@@ -288,6 +301,10 @@ export class BujoParser {
         return this.settings.taskMarkers.cancelled;
       case BujoSignifier.EVENT:
         return this.settings.taskMarkers.event;
+      case BujoSignifier.EVENT_DONE:
+        return this.settings.taskMarkers.eventDone;
+      case BujoSignifier.EVENT_CANCELLED:
+        return this.settings.taskMarkers.eventCancelled;
       case BujoSignifier.TASK:
       default:
         return this.settings.taskMarkers.task;

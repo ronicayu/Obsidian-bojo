@@ -10,7 +10,9 @@ export enum BujoSignifier {
   TASK_MIGRATED = '>',     // > - Migrated task (moved to future log/collection)
   TASK_SCHEDULED = '<',    // < - Scheduled task (moved to calendar)
   TASK_CANCELLED = '-',    // - Cancelled/irrelevant task
-  EVENT = 'o',             // ○ - Event
+  EVENT = 'o',             // ○ - Event (open circle)
+  EVENT_DONE = 'O',        // ● - Done/occurred event (filled circle)
+  EVENT_CANCELLED = 'oc',  // Event cancelled
   NOTE = 'note',           // - (dash) - Note
   PRIORITY = '*',          // * - Priority marker
   INSPIRATION = '!',       // ! - Inspiration/idea
@@ -104,6 +106,8 @@ export interface TaskMarkers {
   scheduled: string;
   cancelled: string;
   event: string;
+  eventDone: string;
+  eventCancelled: string;
 }
 
 /**
@@ -165,5 +169,7 @@ export const DEFAULT_SETTINGS: BojoSettings = {
     scheduled: '[<]',
     cancelled: '[-]',
     event: '[o]',
+    eventDone: '[O]',
+    eventCancelled: '[~]',
   },
 };

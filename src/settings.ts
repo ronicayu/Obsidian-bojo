@@ -254,13 +254,41 @@ export class BojoSettingTab extends PluginSettingTab {
     // Event
     new Setting(containerEl)
       .setName('Event')
-      .setDesc('Marker for events (meetings, appointments)')
+      .setDesc('Marker for pending events (meetings, appointments)')
       .addText((text) =>
         text
           .setPlaceholder('[o]')
           .setValue(this.plugin.settings.taskMarkers.event)
           .onChange(async (value) => {
             this.plugin.settings.taskMarkers.event = value || '[o]';
+            await this.plugin.saveSettings();
+          })
+      );
+
+    // Event Done
+    new Setting(containerEl)
+      .setName('Event Done')
+      .setDesc('Marker for completed/occurred events (filled circle)')
+      .addText((text) =>
+        text
+          .setPlaceholder('[O]')
+          .setValue(this.plugin.settings.taskMarkers.eventDone)
+          .onChange(async (value) => {
+            this.plugin.settings.taskMarkers.eventDone = value || '[O]';
+            await this.plugin.saveSettings();
+          })
+      );
+
+    // Event Cancelled
+    new Setting(containerEl)
+      .setName('Event Cancelled')
+      .setDesc('Marker for cancelled events')
+      .addText((text) =>
+        text
+          .setPlaceholder('[~]')
+          .setValue(this.plugin.settings.taskMarkers.eventCancelled)
+          .onChange(async (value) => {
+            this.plugin.settings.taskMarkers.eventCancelled = value || '[~]';
             await this.plugin.saveSettings();
           })
       );
@@ -276,7 +304,9 @@ export class BojoSettingTab extends PluginSettingTab {
         <li><code>- [>]</code> Migrated task (moved forward)</li>
         <li><code>- [<]</code> Scheduled task (moved to calendar)</li>
         <li><code>- [-]</code> Cancelled task</li>
-        <li><code>- [o]</code> Event (meeting, appointment)</li>
+        <li><code>- [o]</code> Event ○ (pending)</li>
+        <li><code>- [O]</code> Event ● (done/occurred)</li>
+        <li><code>- [~]</code> Event cancelled</li>
       </ul>
       <p><strong>Metadata:</strong></p>
       <ul>

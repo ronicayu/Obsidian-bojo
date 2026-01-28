@@ -209,6 +209,40 @@
   background: var(--background-modifier-hover);
 }
 
+/* Done event styles */
+.bojo-item-O,
+.bojo-item-event_done {
+  background: var(--background-secondary-alt);
+  border-left: 3px solid var(--color-green);
+  opacity: 0.85;
+}
+
+.bojo-item-O .bojo-item-text,
+.bojo-item-event_done .bojo-item-text {
+  color: var(--text-muted);
+}
+
+.bojo-item-O:hover,
+.bojo-item-event_done:hover {
+  background: var(--background-modifier-hover);
+}
+
+/* Cancelled event styles */
+.bojo-item-event_cancelled {
+  background: var(--background-secondary-alt);
+  border-left: 3px solid var(--text-faint);
+  opacity: 0.7;
+}
+
+.bojo-item-event_cancelled .bojo-item-text {
+  text-decoration: line-through;
+  color: var(--text-faint);
+}
+
+.bojo-item-event_cancelled:hover {
+  background: var(--background-modifier-hover);
+}
+
 .bojo-event-indicator {
   display: flex;
   align-items: center;
@@ -219,6 +253,22 @@
   color: var(--text-accent);
   flex-shrink: 0;
   margin-top: 1px;
+  cursor: pointer;
+  border-radius: 50%;
+  transition: background 0.15s ease;
+}
+
+.bojo-event-indicator:hover {
+  background: var(--background-modifier-hover);
+}
+
+.bojo-event-done {
+  color: var(--color-green);
+}
+
+.bojo-event-cancelled {
+  color: var(--text-faint);
+  text-decoration: line-through;
 }
 
 .bojo-item-text-row {

@@ -102,13 +102,23 @@ export class BojoView extends ItemView {
 
     // Filter by signifier (status)
     if (!this.plugin.settings.showCompleted) {
-      filtered = filtered.filter((item) => item.signifier !== BujoSignifier.TASK_COMPLETE);
+      filtered = filtered.filter((item) =>
+        item.signifier !== BujoSignifier.TASK_COMPLETE &&
+        item.signifier !== BujoSignifier.EVENT_DONE
+      );
     }
     if (!this.plugin.settings.showCancelled) {
-      filtered = filtered.filter((item) => item.signifier !== BujoSignifier.TASK_CANCELLED);
+      filtered = filtered.filter((item) =>
+        item.signifier !== BujoSignifier.TASK_CANCELLED &&
+        item.signifier !== BujoSignifier.EVENT_CANCELLED
+      );
     }
     if (!this.plugin.settings.showEvents) {
-      filtered = filtered.filter((item) => item.signifier !== BujoSignifier.EVENT);
+      filtered = filtered.filter((item) =>
+        item.signifier !== BujoSignifier.EVENT &&
+        item.signifier !== BujoSignifier.EVENT_DONE &&
+        item.signifier !== BujoSignifier.EVENT_CANCELLED
+      );
     }
 
     // Filter by search text
@@ -201,10 +211,14 @@ export class BojoView extends ItemView {
         return 3;
       case BujoSignifier.TASK_COMPLETE:
         return 4;
-      case BujoSignifier.TASK_CANCELLED:
+      case BujoSignifier.EVENT_DONE:
         return 5;
-      default:
+      case BujoSignifier.TASK_CANCELLED:
         return 6;
+      case BujoSignifier.EVENT_CANCELLED:
+        return 7;
+      default:
+        return 8;
     }
   }
 
@@ -278,7 +292,8 @@ export class BojoView extends ItemView {
     const total = this.items.length;
     const incomplete = this.items.filter((i) => i.signifier === BujoSignifier.TASK).length;
     const complete = this.items.filter((i) => i.signifier === BujoSignifier.TASK_COMPLETE).length;
-    const events = this.items.filter((i) => i.signifier === BujoSignifier.EVENT).length;
+    const events = this.items.filter((i) => this.isEventType(i.signifier)).length;
+    const pendingEvents = this.items.filter((i) => i.signifier === BujoSignifier.EVENT).length;
     const overdue = this.items.filter(
       (i) => i.signifier === BujoSignifier.TASK && i.dueDate && i.dueDate < new Date()
     ).length;
@@ -286,7 +301,7 @@ export class BojoView extends ItemView {
     stats.innerHTML = `
       <span class="bojo-stat"><strong>${incomplete}</strong> open</span>
       <span class="bojo-stat"><strong>${complete}</strong> done</span>
-      ${events > 0 ? `<span class="bojo-stat bojo-stat-events"><strong>${events}</strong> events</span>` : ''}
+      ${pendingEvents > 0 ? `<span class="bojo-stat bojo-stat-events"><strong>${pendingEvents}</strong> events</span>` : ''}
       ${overdue > 0 ? `<span class="bojo-stat bojo-stat-overdue"><strong>${overdue}</strong> overdue</span>` : ''}
       <span class="bojo-stat bojo-stat-total">${this.filteredItems.length} of ${total} shown</span>
     `;
@@ -386,9 +401,22 @@ export class BojoView extends ItemView {
         return 'Cancelled';
       case BujoSignifier.EVENT:
         return 'Event';
+      case BujoSignifier.EVENT_DONE:
+        return 'Event Done';
+      case BujoSignifier.EVENT_CANCELLED:
+        return 'Event Cancelled';
       default:
         return 'Other';
     }
+  }
+
+  /**
+   * Check if a signifier is an event type
+   */
+  private isEventType(signifier: BujoSignifier): boolean {
+    return signifier === BujoSignifier.EVENT ||
+           signifier === BujoSignifier.EVENT_DONE ||
+           signifier === BujoSignifier.EVENT_CANCELLED;
   }
 
   private getPriorityLabel(priority: Priority): string {
@@ -449,7 +477,9 @@ export class BojoView extends ItemView {
    */
   private renderItem(container: HTMLElement, item: BujoItem): void {
     const itemEl = container.createDiv({ cls: 'bojo-item' });
-    const isEvent = item.signifier === BujoSignifier.EVENT;
+    const isEvent = this.isEventType(item.signifier);
+    const isEventDone = item.signifier === BujoSignifier.EVENT_DONE;
+    const isEventCancelled = item.signifier === BujoSignifier.EVENT_CANCELLED;
 
     // Add status-specific class
     itemEl.addClass(`bojo-item-${item.signifier}`);
@@ -462,7 +492,19 @@ export class BojoView extends ItemView {
     // Event indicator or Checkbox
     if (isEvent) {
       const eventIndicator = itemEl.createSpan({ cls: 'bojo-event-indicator' });
-      eventIndicator.textContent = '○';
+      // Filled circle for done events, open circle for pending, strikethrough for cancelled
+      if (isEventDone) {
+        eventIndicator.textContent = '●';
+        eventIndicator.addClass('bojo-event-done');
+      } else if (isEventCancelled) {
+        eventIndicator.textContent = '○';
+        eventIndicator.addClass('bojo-event-cancelled');
+      } else {
+        eventIndicator.textContent = '○';
+      }
+      // Click to toggle event done
+      eventIndicator.addEventListener('click', () => this.toggleEventDone(item));
+      eventIndicator.style.cursor = 'pointer';
     } else {
       const checkbox = itemEl.createEl('input', {
         type: 'checkbox',
@@ -503,8 +545,8 @@ export class BojoView extends ItemView {
     fileLink.textContent = item.file.basename;
     fileLink.addEventListener('click', () => this.openFile(item));
 
-    // Location for events
-    if (isEvent && item.location) {
+    // Location for events (not for cancelled events, they show as greyed out anyway)
+    if (isEvent && item.location && !isEventCancelled) {
       const locationEl = metaEl.createSpan({ cls: 'bojo-item-location' });
       locationEl.textContent = `📍 ${item.location}`;
     }
@@ -619,10 +661,49 @@ export class BojoView extends ItemView {
   private showItemMenu(e: MouseEvent, item: BujoItem): void {
     e.stopPropagation();
     const menu = new Menu();
-    const isEvent = item.signifier === BujoSignifier.EVENT;
+    const isEvent = this.isEventType(item.signifier);
+    const isEventDone = item.signifier === BujoSignifier.EVENT_DONE;
+    const isEventCancelled = item.signifier === BujoSignifier.EVENT_CANCELLED;
+    const isPendingEvent = item.signifier === BujoSignifier.EVENT;
 
-    // Convert to/from event
+    // Event actions
     if (isEvent) {
+      // Mark as done / Mark as pending
+      if (isEventDone) {
+        menu.addItem((menuItem) =>
+          menuItem
+            .setTitle('Mark as Pending')
+            .setIcon('circle')
+            .onClick(() => this.updateItemStatus(item, BujoSignifier.EVENT))
+        );
+      } else if (isEventCancelled) {
+        menu.addItem((menuItem) =>
+          menuItem
+            .setTitle('Restore Event')
+            .setIcon('undo')
+            .onClick(() => this.updateItemStatus(item, BujoSignifier.EVENT))
+        );
+      } else {
+        menu.addItem((menuItem) =>
+          menuItem
+            .setTitle('Mark as Done')
+            .setIcon('check-circle')
+            .onClick(() => this.updateItemStatus(item, BujoSignifier.EVENT_DONE))
+        );
+      }
+
+      // Cancel event
+      if (!isEventCancelled) {
+        menu.addItem((menuItem) =>
+          menuItem
+            .setTitle('Cancel Event')
+            .setIcon('x-circle')
+            .onClick(() => this.updateItemStatus(item, BujoSignifier.EVENT_CANCELLED))
+        );
+      }
+
+      menu.addSeparator();
+
       menu.addItem((menuItem) =>
         menuItem
           .setTitle('Convert to Task')
@@ -737,17 +818,34 @@ export class BojoView extends ItemView {
   }
 
   /**
+   * Toggle event done status
+   */
+  private async toggleEventDone(item: BujoItem): Promise<void> {
+    let newSignifier: BujoSignifier;
+    if (item.signifier === BujoSignifier.EVENT_DONE) {
+      newSignifier = BujoSignifier.EVENT;
+    } else if (item.signifier === BujoSignifier.EVENT_CANCELLED) {
+      newSignifier = BujoSignifier.EVENT; // Restore cancelled event
+    } else {
+      newSignifier = BujoSignifier.EVENT_DONE;
+    }
+    await this.updateItemStatus(item, newSignifier);
+  }
+
+  /**
    * Update item status/signifier
    */
   private async updateItemStatus(item: BujoItem, newSignifier: BujoSignifier): Promise<void> {
     const oldItem = { ...item };
     item.signifier = newSignifier;
-    if (newSignifier === BujoSignifier.TASK_COMPLETE) {
+    if (newSignifier === BujoSignifier.TASK_COMPLETE || newSignifier === BujoSignifier.EVENT_DONE) {
       item.completedDate = new Date();
     }
     await this.updateItemInFile(oldItem, item);
     await this.refresh();
-    new Notice(`Task ${this.getStatusLabel(newSignifier).toLowerCase()}`);
+    const label = this.getStatusLabel(newSignifier).toLowerCase();
+    const itemType = this.isEventType(newSignifier) ? 'Event' : 'Task';
+    new Notice(`${itemType} ${label}`);
   }
 
   /**
