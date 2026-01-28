@@ -186,16 +186,7 @@
   color: var(--text-faint);
 }
 
-.bojo-item-> .bojo-item-text::after,
-.bojo-item-task_migrated .bojo-item-text::after {
-  content: ' →';
-  color: var(--text-muted);
-}
-
-.bojo-item-< .bojo-item-text::after,
-.bojo-item-task_scheduled .bojo-item-text::after {
-  content: ' 📅';
-}
+/* Migrated and scheduled tasks now use icon indicators instead of text suffixes */
 
 /* Event styles */
 .bojo-item-o,
@@ -311,6 +302,41 @@
   margin-top: 2px;
   cursor: pointer;
   flex-shrink: 0;
+}
+
+/* Status indicators for migrated, scheduled, cancelled tasks */
+.bojo-status-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  margin-top: 1px;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background 0.15s ease;
+}
+
+.bojo-status-indicator:hover {
+  background: var(--background-modifier-hover);
+}
+
+.bojo-status-indicator svg {
+  width: 14px;
+  height: 14px;
+}
+
+.bojo-migrated-indicator {
+  color: var(--text-accent);
+}
+
+.bojo-scheduled-indicator {
+  color: var(--color-orange, #d08800);
+}
+
+.bojo-cancelled-indicator {
+  color: var(--text-faint);
 }
 
 /* Item content */

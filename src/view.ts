@@ -480,6 +480,9 @@ export class BojoView extends ItemView {
     const isEvent = this.isEventType(item.signifier);
     const isEventDone = item.signifier === BujoSignifier.EVENT_DONE;
     const isEventCancelled = item.signifier === BujoSignifier.EVENT_CANCELLED;
+    const isMigrated = item.signifier === BujoSignifier.TASK_MIGRATED;
+    const isScheduled = item.signifier === BujoSignifier.TASK_SCHEDULED;
+    const isCancelled = item.signifier === BujoSignifier.TASK_CANCELLED;
 
     // Add status-specific class
     itemEl.addClass(`bojo-item-${item.signifier}`);
@@ -489,10 +492,10 @@ export class BojoView extends ItemView {
       itemEl.addClass(`bojo-priority-${item.priority}`);
     }
 
-    // Event indicator or Checkbox
+    // Render indicator based on item type
     if (isEvent) {
+      // Event indicator (circles)
       const eventIndicator = itemEl.createSpan({ cls: 'bojo-event-indicator' });
-      // Filled circle for done events, open circle for pending, strikethrough for cancelled
       if (isEventDone) {
         eventIndicator.textContent = '●';
         eventIndicator.addClass('bojo-event-done');
@@ -502,10 +505,31 @@ export class BojoView extends ItemView {
       } else {
         eventIndicator.textContent = '○';
       }
-      // Click to toggle event done
       eventIndicator.addEventListener('click', () => this.toggleEventDone(item));
       eventIndicator.style.cursor = 'pointer';
+    } else if (isMigrated) {
+      // Migrated task indicator (forward arrow)
+      const indicator = itemEl.createSpan({ cls: 'bojo-status-indicator bojo-migrated-indicator' });
+      setIcon(indicator, 'forward');
+      indicator.addEventListener('click', () => this.updateItemStatus(item, BujoSignifier.TASK));
+      indicator.style.cursor = 'pointer';
+      indicator.setAttribute('aria-label', 'Click to restore task');
+    } else if (isScheduled) {
+      // Scheduled task indicator (calendar arrow)
+      const indicator = itemEl.createSpan({ cls: 'bojo-status-indicator bojo-scheduled-indicator' });
+      setIcon(indicator, 'calendar-clock');
+      indicator.addEventListener('click', () => this.updateItemStatus(item, BujoSignifier.TASK));
+      indicator.style.cursor = 'pointer';
+      indicator.setAttribute('aria-label', 'Click to restore task');
+    } else if (isCancelled) {
+      // Cancelled task indicator (x)
+      const indicator = itemEl.createSpan({ cls: 'bojo-status-indicator bojo-cancelled-indicator' });
+      setIcon(indicator, 'x');
+      indicator.addEventListener('click', () => this.updateItemStatus(item, BujoSignifier.TASK));
+      indicator.style.cursor = 'pointer';
+      indicator.setAttribute('aria-label', 'Click to restore task');
     } else {
+      // Regular task checkbox
       const checkbox = itemEl.createEl('input', {
         type: 'checkbox',
         cls: 'bojo-checkbox',
