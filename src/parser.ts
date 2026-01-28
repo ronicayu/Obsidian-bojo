@@ -103,9 +103,9 @@ export class BujoParser {
    * Parse a single line for a bullet journal item
    */
   parseLine(line: string, file: TFile, lineNumber: number): BujoItem | null {
-    // Match checkbox patterns: - [ ], - [x], - [>], - [<], - [-], - [o], - [O], - [~], * [ ], etc.
-    // Note: Don't use 'i' flag to preserve case sensitivity for o vs O
-    const checkboxRegex = /^(\s*)[-*]\s+\[([ xX><!oO~-])\]\s*(.*)$/;
+    // Match checkbox patterns: - [X], * [X] where X is any single character
+    // This allows custom markers to be recognized
+    const checkboxRegex = /^(\s*)[-*]\s+\[(.)\]\s*(.*)$/;
     const match = line.match(checkboxRegex);
 
     if (!match) {
@@ -141,10 +141,47 @@ export class BujoParser {
   }
 
   /**
-   * Convert marker character to signifier
+   * Extract the marker character from a task marker setting (e.g., "[x]" -> "x")
+   */
+  private extractMarkerChar(markerSetting: string): string {
+    const match = markerSetting.match(/\[(.)\]/);
+    return match ? match[1] : '';
+  }
+
+  /**
+   * Convert marker character to signifier, respecting custom markers from settings
    */
   private markerToSignifier(marker: string): BujoSignifier {
-    // Handle case-sensitive markers first
+    const markers = this.settings.taskMarkers;
+
+    // Check custom markers from settings first (exact match)
+    if (marker === this.extractMarkerChar(markers.complete)) {
+      return BujoSignifier.TASK_COMPLETE;
+    }
+    if (marker === this.extractMarkerChar(markers.migrated)) {
+      return BujoSignifier.TASK_MIGRATED;
+    }
+    if (marker === this.extractMarkerChar(markers.scheduled)) {
+      return BujoSignifier.TASK_SCHEDULED;
+    }
+    if (marker === this.extractMarkerChar(markers.cancelled)) {
+      return BujoSignifier.TASK_CANCELLED;
+    }
+    if (marker === this.extractMarkerChar(markers.event)) {
+      return BujoSignifier.EVENT;
+    }
+    if (marker === this.extractMarkerChar(markers.eventDone)) {
+      return BujoSignifier.EVENT_DONE;
+    }
+    if (marker === this.extractMarkerChar(markers.eventCancelled)) {
+      return BujoSignifier.EVENT_CANCELLED;
+    }
+    if (marker === this.extractMarkerChar(markers.task) || marker === ' ') {
+      return BujoSignifier.TASK;
+    }
+
+    // Fallback to default mappings for backwards compatibility
+    // (handles cases where marker doesn't match any custom setting)
     switch (marker) {
       case 'o':
         return BujoSignifier.EVENT;
@@ -154,7 +191,6 @@ export class BujoParser {
         return BujoSignifier.EVENT_CANCELLED;
     }
 
-    // Handle case-insensitive markers
     const lowerMarker = marker.toLowerCase();
     switch (lowerMarker) {
       case 'x':
@@ -167,7 +203,6 @@ export class BujoParser {
         return BujoSignifier.TASK_CANCELLED;
       case '!':
         return BujoSignifier.INSPIRATION;
-      case ' ':
       default:
         return BujoSignifier.TASK;
     }
