@@ -14,6 +14,14 @@ A plugin that helps you organize your todo list using the Bullet Journal methodo
 - **Migrate** (`[>]`) - Move a task forward to a future log
 - **Schedule** (`[<]`) - Move a task to your calendar
 - **Cancel** (`[-]`) - Mark a task as cancelled/irrelevant
+- **Event** (`[o]`) - Mark as an event (meeting, appointment)
+
+### Events (Meetings)
+Track events like meetings and appointments with:
+- **Time**: `🕐 14:30` or `@14:30` or time ranges like `14:30-15:30`
+- **Location**: `📍 Conference Room` or `location:Conference Room`
+- Events are displayed with their time prominently shown
+- Filter events on/off in the view
 
 ### Task Metadata
 Support for rich task metadata:
@@ -34,11 +42,21 @@ Support for rich task metadata:
 - [>] Migrated task
 - [<] Scheduled task
 - [-] Cancelled task
+- [o] Event (meeting, appointment)
 
 - [ ] Task with due date 📅 2024-01-15
 - [ ] High priority task ⏫
 - [ ] Task with tags #project #urgent
 - [ ] Combined: Important meeting ⏫ 📅 2024-01-20 #work
+```
+
+### Event Syntax
+
+```markdown
+- [o] Team standup 09:00-09:30 📍 Zoom
+- [o] Client meeting 🕐 14:00 📍 Conference Room A #client
+- [o] Lunch with John @12:30 📍 Cafe
+- [o] Project review 15:00-16:30 📅 2024-01-20
 ```
 
 ### Commands
@@ -52,6 +70,9 @@ Access these commands via the command palette (Ctrl/Cmd + P):
 - **Cancel Task (-)** - Mark task as cancelled
 - **Add Task Due Today** - Insert a new task with today's due date
 - **Add High Priority Task** - Insert a new high priority task
+- **Convert to Event (o)** - Convert current line to an event
+- **Insert Event** - Insert a new event
+- **Insert Event with Time** - Insert a new event with current time
 - **Refresh Bullet Journal Todo View** - Manually refresh the view
 - **Add Current Folder to Todo Sources** - Quick add folder to sources
 - **Add Current File to Todo Sources** - Quick add file to sources
@@ -99,6 +120,7 @@ The Bullet Journal method uses rapid logging with specific signifiers:
 | `- [>]` | Task migrated (moved forward) |
 | `- [<]` | Task scheduled (in calendar) |
 | `- [-]` | Task cancelled |
+| `- [o]` | Event (meeting, appointment) |
 
 ### Migration
 When reviewing tasks, if a task wasn't completed:

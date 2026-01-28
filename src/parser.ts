@@ -98,8 +98,8 @@ export class BujoParser {
    * Parse a single line for a bullet journal item
    */
   parseLine(line: string, file: TFile, lineNumber: number): BujoItem | null {
-    // Match checkbox patterns: - [ ], - [x], - [>], - [<], - [-], * [ ], etc.
-    const checkboxRegex = /^(\s*)[-*]\s+\[([ x><!-])\]\s*(.*)$/i;
+    // Match checkbox patterns: - [ ], - [x], - [>], - [<], - [-], - [o], * [ ], etc.
+    const checkboxRegex = /^(\s*)[-*]\s+\[([ x><!oO-])\]\s*(.*)$/i;
     const match = line.match(checkboxRegex);
 
     if (!match) {
@@ -108,7 +108,7 @@ export class BujoParser {
 
     const [, indent, marker, text] = match;
     const signifier = this.markerToSignifier(marker);
-    const { content, tags, dueDate, scheduledDate, priority, recurrence, createdDate } = this.parseContent(text);
+    const { content, tags, dueDate, scheduledDate, priority, recurrence, createdDate, startTime, endTime, location } = this.parseContent(text, signifier);
 
     return {
       id: `${file.path}:${lineNumber}`,
@@ -125,6 +125,9 @@ export class BujoParser {
       originalText: line,
       indentation: indent.length,
       recurrence,
+      startTime,
+      endTime,
+      location,
     };
   }
 
@@ -144,6 +147,8 @@ export class BujoParser {
         return BujoSignifier.TASK_CANCELLED;
       case '!':
         return BujoSignifier.INSPIRATION;
+      case 'o':
+        return BujoSignifier.EVENT;
       case ' ':
       default:
         return BujoSignifier.TASK;
@@ -153,7 +158,7 @@ export class BujoParser {
   /**
    * Parse the content of a todo item for metadata
    */
-  private parseContent(text: string): {
+  private parseContent(text: string, signifier?: BujoSignifier): {
     content: string;
     tags: string[];
     dueDate: Date | null;
@@ -161,6 +166,9 @@ export class BujoParser {
     priority: Priority;
     recurrence: string | null;
     createdDate: Date | null;
+    startTime: string | null;
+    endTime: string | null;
+    location: string | null;
   } {
     let content = text;
     const tags: string[] = [];
@@ -169,6 +177,9 @@ export class BujoParser {
     let priority = Priority.NONE;
     let recurrence: string | null = null;
     let createdDate: Date | null = null;
+    let startTime: string | null = null;
+    let endTime: string | null = null;
+    let location: string | null = null;
 
     // Extract tags (#tag)
     const tagRegex = /#([a-zA-Z0-9_-]+)/g;
@@ -201,6 +212,41 @@ export class BujoParser {
       content = content.replace(createdRegex, '').trim();
     }
 
+    // Extract start time (🕐 HH:MM or time:HH:MM or @HH:MM)
+    const startTimeRegex = /(?:🕐|🕑|🕒|🕓|🕔|🕕|🕖|🕗|🕘|🕙|🕚|🕛|time:|@)\s*(\d{1,2}:\d{2})/;
+    const startTimeMatch = text.match(startTimeRegex);
+    if (startTimeMatch) {
+      startTime = startTimeMatch[1];
+      content = content.replace(startTimeRegex, '').trim();
+    }
+
+    // Extract end time (➡️ HH:MM or -HH:MM or end:HH:MM or to:HH:MM)
+    const endTimeRegex = /(?:➡️|end:|to:|-)\s*(\d{1,2}:\d{2})(?!\d)/;
+    const endTimeMatch = text.match(endTimeRegex);
+    if (endTimeMatch) {
+      endTime = endTimeMatch[1];
+      content = content.replace(endTimeRegex, '').trim();
+    }
+
+    // Extract time range (HH:MM-HH:MM or HH:MM - HH:MM)
+    if (!startTime && !endTime) {
+      const timeRangeRegex = /(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})/;
+      const timeRangeMatch = text.match(timeRangeRegex);
+      if (timeRangeMatch) {
+        startTime = timeRangeMatch[1];
+        endTime = timeRangeMatch[2];
+        content = content.replace(timeRangeRegex, '').trim();
+      }
+    }
+
+    // Extract location (📍 location or location:xxx or @location after time)
+    const locationRegex = /(?:📍|location:)\s*([^#📅⏳➕⏫🔼🔽🔁🕐]+?)(?=\s+[#📅⏳➕⏫🔼🔽🔁]|$)/;
+    const locationMatch = text.match(locationRegex);
+    if (locationMatch) {
+      location = locationMatch[1].trim();
+      content = content.replace(locationRegex, '').trim();
+    }
+
     // Extract priority (⏫ high, 🔼 medium, 🔽 low, or priority:high/medium/low)
     if (text.includes('⏫') || /priority:\s*high/i.test(text)) {
       priority = Priority.HIGH;
@@ -224,7 +270,7 @@ export class BujoParser {
     // Clean up content - remove extra spaces
     content = content.replace(/\s+/g, ' ').trim();
 
-    return { content, tags, dueDate, scheduledDate, priority, recurrence, createdDate };
+    return { content, tags, dueDate, scheduledDate, priority, recurrence, createdDate, startTime, endTime, location };
   }
 
   /**
@@ -240,6 +286,8 @@ export class BujoParser {
         return this.settings.taskMarkers.scheduled;
       case BujoSignifier.TASK_CANCELLED:
         return this.settings.taskMarkers.cancelled;
+      case BujoSignifier.EVENT:
+        return this.settings.taskMarkers.event;
       case BujoSignifier.TASK:
       default:
         return this.settings.taskMarkers.task;
@@ -253,6 +301,20 @@ export class BujoParser {
     const indent = ' '.repeat(item.indentation);
     const marker = this.getSignifierMarker(item.signifier);
     let content = item.content;
+
+    // Add time for events
+    if (item.startTime) {
+      if (item.endTime) {
+        content += ` ${item.startTime}-${item.endTime}`;
+      } else {
+        content += ` 🕐 ${item.startTime}`;
+      }
+    }
+
+    // Add location for events
+    if (item.location) {
+      content += ` 📍 ${item.location}`;
+    }
 
     // Add metadata back
     if (item.priority === Priority.HIGH) {

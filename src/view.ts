@@ -107,6 +107,9 @@ export class BojoView extends ItemView {
     if (!this.plugin.settings.showCancelled) {
       filtered = filtered.filter((item) => item.signifier !== BujoSignifier.TASK_CANCELLED);
     }
+    if (!this.plugin.settings.showEvents) {
+      filtered = filtered.filter((item) => item.signifier !== BujoSignifier.EVENT);
+    }
 
     // Filter by search text
     if (this.filter.searchText) {
@@ -188,18 +191,20 @@ export class BojoView extends ItemView {
 
   private getStatusOrder(signifier: BujoSignifier): number {
     switch (signifier) {
-      case BujoSignifier.TASK:
+      case BujoSignifier.EVENT:
         return 0;
-      case BujoSignifier.TASK_SCHEDULED:
+      case BujoSignifier.TASK:
         return 1;
-      case BujoSignifier.TASK_MIGRATED:
+      case BujoSignifier.TASK_SCHEDULED:
         return 2;
-      case BujoSignifier.TASK_COMPLETE:
+      case BujoSignifier.TASK_MIGRATED:
         return 3;
-      case BujoSignifier.TASK_CANCELLED:
+      case BujoSignifier.TASK_COMPLETE:
         return 4;
-      default:
+      case BujoSignifier.TASK_CANCELLED:
         return 5;
+      default:
+        return 6;
     }
   }
 
@@ -273,6 +278,7 @@ export class BojoView extends ItemView {
     const total = this.items.length;
     const incomplete = this.items.filter((i) => i.signifier === BujoSignifier.TASK).length;
     const complete = this.items.filter((i) => i.signifier === BujoSignifier.TASK_COMPLETE).length;
+    const events = this.items.filter((i) => i.signifier === BujoSignifier.EVENT).length;
     const overdue = this.items.filter(
       (i) => i.signifier === BujoSignifier.TASK && i.dueDate && i.dueDate < new Date()
     ).length;
@@ -280,6 +286,7 @@ export class BojoView extends ItemView {
     stats.innerHTML = `
       <span class="bojo-stat"><strong>${incomplete}</strong> open</span>
       <span class="bojo-stat"><strong>${complete}</strong> done</span>
+      ${events > 0 ? `<span class="bojo-stat bojo-stat-events"><strong>${events}</strong> events</span>` : ''}
       ${overdue > 0 ? `<span class="bojo-stat bojo-stat-overdue"><strong>${overdue}</strong> overdue</span>` : ''}
       <span class="bojo-stat bojo-stat-total">${this.filteredItems.length} of ${total} shown</span>
     `;
@@ -377,6 +384,8 @@ export class BojoView extends ItemView {
         return 'Scheduled';
       case BujoSignifier.TASK_CANCELLED:
         return 'Cancelled';
+      case BujoSignifier.EVENT:
+        return 'Event';
       default:
         return 'Other';
     }
@@ -440,6 +449,7 @@ export class BojoView extends ItemView {
    */
   private renderItem(container: HTMLElement, item: BujoItem): void {
     const itemEl = container.createDiv({ cls: 'bojo-item' });
+    const isEvent = item.signifier === BujoSignifier.EVENT;
 
     // Add status-specific class
     itemEl.addClass(`bojo-item-${item.signifier}`);
@@ -449,19 +459,37 @@ export class BojoView extends ItemView {
       itemEl.addClass(`bojo-priority-${item.priority}`);
     }
 
-    // Checkbox
-    const checkbox = itemEl.createEl('input', {
-      type: 'checkbox',
-      cls: 'bojo-checkbox',
-    });
-    checkbox.checked = item.signifier === BujoSignifier.TASK_COMPLETE;
-    checkbox.addEventListener('change', () => this.toggleComplete(item));
+    // Event indicator or Checkbox
+    if (isEvent) {
+      const eventIndicator = itemEl.createSpan({ cls: 'bojo-event-indicator' });
+      eventIndicator.textContent = '○';
+    } else {
+      const checkbox = itemEl.createEl('input', {
+        type: 'checkbox',
+        cls: 'bojo-checkbox',
+      });
+      checkbox.checked = item.signifier === BujoSignifier.TASK_COMPLETE;
+      checkbox.addEventListener('change', () => this.toggleComplete(item));
+    }
 
     // Content wrapper
     const contentWrapper = itemEl.createDiv({ cls: 'bojo-item-content' });
 
+    // Main text row (with time for events)
+    const textRow = contentWrapper.createDiv({ cls: 'bojo-item-text-row' });
+
+    // Time display for events
+    if (isEvent && item.startTime) {
+      const timeEl = textRow.createSpan({ cls: 'bojo-item-time' });
+      if (item.endTime) {
+        timeEl.textContent = `${item.startTime} - ${item.endTime}`;
+      } else {
+        timeEl.textContent = item.startTime;
+      }
+    }
+
     // Main text
-    const textEl = contentWrapper.createSpan({ cls: 'bojo-item-text' });
+    const textEl = textRow.createSpan({ cls: 'bojo-item-text' });
     textEl.textContent = item.content;
 
     // Click to open file
@@ -474,6 +502,12 @@ export class BojoView extends ItemView {
     const fileLink = metaEl.createSpan({ cls: 'bojo-item-file' });
     fileLink.textContent = item.file.basename;
     fileLink.addEventListener('click', () => this.openFile(item));
+
+    // Location for events
+    if (isEvent && item.location) {
+      const locationEl = metaEl.createSpan({ cls: 'bojo-item-location' });
+      locationEl.textContent = `📍 ${item.location}`;
+    }
 
     // Due date
     if (item.dueDate) {
@@ -532,6 +566,18 @@ export class BojoView extends ItemView {
 
     menu.addItem((item) =>
       item
+        .setTitle('Show Events')
+        .setChecked(this.plugin.settings.showEvents)
+        .onClick(async () => {
+          this.plugin.settings.showEvents = !this.plugin.settings.showEvents;
+          await this.plugin.saveSettings();
+          this.applyFilters();
+          this.render();
+        })
+    );
+
+    menu.addItem((item) =>
+      item
         .setTitle('Show Completed')
         .setChecked(this.plugin.settings.showCompleted)
         .onClick(async () => {
@@ -573,55 +619,71 @@ export class BojoView extends ItemView {
   private showItemMenu(e: MouseEvent, item: BujoItem): void {
     e.stopPropagation();
     const menu = new Menu();
+    const isEvent = item.signifier === BujoSignifier.EVENT;
 
-    // Complete/Uncomplete
-    if (item.signifier === BujoSignifier.TASK_COMPLETE) {
+    // Convert to/from event
+    if (isEvent) {
       menu.addItem((menuItem) =>
         menuItem
-          .setTitle('Mark as Incomplete')
-          .setIcon('circle')
+          .setTitle('Convert to Task')
+          .setIcon('check-square')
           .onClick(() => this.updateItemStatus(item, BujoSignifier.TASK))
       );
     } else {
+      // Complete/Uncomplete for tasks
+      if (item.signifier === BujoSignifier.TASK_COMPLETE) {
+        menu.addItem((menuItem) =>
+          menuItem
+            .setTitle('Mark as Incomplete')
+            .setIcon('circle')
+            .onClick(() => this.updateItemStatus(item, BujoSignifier.TASK))
+        );
+      } else {
+        menu.addItem((menuItem) =>
+          menuItem
+            .setTitle('Complete')
+            .setIcon('check')
+            .onClick(() => this.updateItemStatus(item, BujoSignifier.TASK_COMPLETE))
+        );
+      }
+
       menu.addItem((menuItem) =>
         menuItem
-          .setTitle('Complete')
-          .setIcon('check')
-          .onClick(() => this.updateItemStatus(item, BujoSignifier.TASK_COMPLETE))
+          .setTitle('Convert to Event')
+          .setIcon('calendar-clock')
+          .onClick(() => this.updateItemStatus(item, BujoSignifier.EVENT))
       );
     }
 
     menu.addSeparator();
 
-    // Bullet Journal Actions
-    menu.addItem((menuItem) =>
-      menuItem
-        .setTitle('Migrate (>)')
-        .setIcon('arrow-right')
-        .onClick(() => this.updateItemStatus(item, BujoSignifier.TASK_MIGRATED))
-    );
+    // Bullet Journal Actions (for tasks only)
+    if (!isEvent) {
+      menu.addItem((menuItem) =>
+        menuItem
+          .setTitle('Migrate (>)')
+          .setIcon('arrow-right')
+          .onClick(() => this.updateItemStatus(item, BujoSignifier.TASK_MIGRATED))
+      );
 
-    menu.addItem((menuItem) =>
-      menuItem
-        .setTitle('Schedule (<)')
-        .setIcon('calendar')
-        .onClick(() => this.updateItemStatus(item, BujoSignifier.TASK_SCHEDULED))
-    );
+      menu.addItem((menuItem) =>
+        menuItem
+          .setTitle('Schedule (<)')
+          .setIcon('calendar')
+          .onClick(() => this.updateItemStatus(item, BujoSignifier.TASK_SCHEDULED))
+      );
 
-    menu.addItem((menuItem) =>
-      menuItem
-        .setTitle('Cancel (-)')
-        .setIcon('x')
-        .onClick(() => this.updateItemStatus(item, BujoSignifier.TASK_CANCELLED))
-    );
+      menu.addItem((menuItem) =>
+        menuItem
+          .setTitle('Cancel (-)')
+          .setIcon('x')
+          .onClick(() => this.updateItemStatus(item, BujoSignifier.TASK_CANCELLED))
+      );
 
-    menu.addSeparator();
+      menu.addSeparator();
+    }
 
     // Priority
-    const prioritySubmenu = menu.addItem((menuItem) =>
-      menuItem.setTitle('Set Priority').setIcon('alert-triangle')
-    );
-
     menu.addItem((menuItem) =>
       menuItem
         .setTitle('High Priority')

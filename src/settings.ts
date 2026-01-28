@@ -134,6 +134,17 @@ export class BojoSettingTab extends PluginSettingTab {
         })
       );
 
+    // Show Events
+    new Setting(containerEl)
+      .setName('Show Events')
+      .setDesc('Display events (meetings, appointments) in the todo list')
+      .addToggle((toggle) =>
+        toggle.setValue(this.plugin.settings.showEvents).onChange(async (value) => {
+          this.plugin.settings.showEvents = value;
+          await this.plugin.saveSettings();
+        })
+      );
+
     // Date Format
     new Setting(containerEl)
       .setName('Date Format')
@@ -240,6 +251,20 @@ export class BojoSettingTab extends PluginSettingTab {
           })
       );
 
+    // Event
+    new Setting(containerEl)
+      .setName('Event')
+      .setDesc('Marker for events (meetings, appointments)')
+      .addText((text) =>
+        text
+          .setPlaceholder('[o]')
+          .setValue(this.plugin.settings.taskMarkers.event)
+          .onChange(async (value) => {
+            this.plugin.settings.taskMarkers.event = value || '[o]';
+            await this.plugin.saveSettings();
+          })
+      );
+
     // Help Section
     containerEl.createEl('h2', { text: 'Bullet Journal Quick Reference' });
     const helpDiv = containerEl.createDiv({ cls: 'bojo-help' });
@@ -251,6 +276,7 @@ export class BojoSettingTab extends PluginSettingTab {
         <li><code>- [>]</code> Migrated task (moved forward)</li>
         <li><code>- [<]</code> Scheduled task (moved to calendar)</li>
         <li><code>- [-]</code> Cancelled task</li>
+        <li><code>- [o]</code> Event (meeting, appointment)</li>
       </ul>
       <p><strong>Metadata:</strong></p>
       <ul>
@@ -262,6 +288,12 @@ export class BojoSettingTab extends PluginSettingTab {
         <li><code>🔽</code> or <code>priority:low</code> - Low priority</li>
         <li><code>🔁 every day</code> or <code>recur:daily</code> - Recurrence</li>
         <li><code>#tag</code> - Tags</li>
+      </ul>
+      <p><strong>Event Metadata:</strong></p>
+      <ul>
+        <li><code>🕐 14:30</code> or <code>@14:30</code> - Start time</li>
+        <li><code>14:30-15:30</code> - Time range</li>
+        <li><code>📍 Conference Room</code> or <code>location:Conference Room</code> - Location</li>
       </ul>
     `;
   }

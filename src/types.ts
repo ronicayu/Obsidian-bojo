@@ -58,6 +58,12 @@ export interface BujoItem {
   indentation: number;
   /** Recurrence rule (if any) */
   recurrence: string | null;
+  /** Start time for events (HH:MM format) */
+  startTime: string | null;
+  /** End time for events (HH:MM format) */
+  endTime: string | null;
+  /** Location for events */
+  location: string | null;
 }
 
 /**
@@ -80,6 +86,8 @@ export interface BojoSettings {
   showCompleted: boolean;
   /** Show cancelled tasks */
   showCancelled: boolean;
+  /** Show events */
+  showEvents: boolean;
   /** Auto-refresh interval in seconds (0 = disabled) */
   autoRefreshInterval: number;
   /** Custom task markers */
@@ -95,6 +103,7 @@ export interface TaskMarkers {
   migrated: string;
   scheduled: string;
   cancelled: string;
+  event: string;
 }
 
 /**
@@ -147,6 +156,7 @@ export const DEFAULT_SETTINGS: BojoSettings = {
   groupBy: GroupBy.FILE,
   showCompleted: false,
   showCancelled: false,
+  showEvents: true,
   autoRefreshInterval: 0,
   taskMarkers: {
     task: '[ ]',
@@ -154,5 +164,6 @@ export const DEFAULT_SETTINGS: BojoSettings = {
     migrated: '[>]',
     scheduled: '[<]',
     cancelled: '[-]',
+    event: '[o]',
   },
 };

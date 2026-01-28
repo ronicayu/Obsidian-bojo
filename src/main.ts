@@ -166,6 +166,33 @@ export default class BojoPlugin extends Plugin {
       },
     });
 
+    // Convert to event
+    this.addCommand({
+      id: 'convert-to-event',
+      name: 'Convert to Event (o)',
+      editorCallback: (editor: Editor, view: MarkdownView) => {
+        this.toggleTaskAtCursor(editor, BujoSignifier.EVENT);
+      },
+    });
+
+    // Insert new event
+    this.addCommand({
+      id: 'insert-event',
+      name: 'Insert Event',
+      editorCallback: (editor: Editor, view: MarkdownView) => {
+        this.insertEvent(editor);
+      },
+    });
+
+    // Insert event with time
+    this.addCommand({
+      id: 'insert-event-with-time',
+      name: 'Insert Event with Time',
+      editorCallback: (editor: Editor, view: MarkdownView) => {
+        this.insertEvent(editor, { withTime: true });
+      },
+    });
+
     // Refresh view
     this.addCommand({
       id: 'refresh-bojo-view',
@@ -232,12 +259,12 @@ export default class BojoPlugin extends Plugin {
     const cursor = editor.getCursor();
     const line = editor.getLine(cursor.line);
 
-    // Check if this is a task line
-    const checkboxRegex = /^(\s*[-*]\s+\[)([ x><!-])(\].*)$/i;
+    // Check if this is a task/event line
+    const checkboxRegex = /^(\s*[-*]\s+\[)([ x><!oO-])(\].*)$/i;
     const match = line.match(checkboxRegex);
 
     if (!match) {
-      new Notice('No task found on current line');
+      new Notice('No task or event found on current line');
       return;
     }
 
@@ -257,6 +284,9 @@ export default class BojoPlugin extends Plugin {
         break;
       case BujoSignifier.TASK_CANCELLED:
         newMarker = '-';
+        break;
+      case BujoSignifier.EVENT:
+        newMarker = currentMarker.toLowerCase() === 'o' ? ' ' : 'o';
         break;
       default:
         newMarker = ' ';
@@ -285,6 +315,26 @@ export default class BojoPlugin extends Plugin {
 
     editor.replaceRange(taskText, cursor);
     editor.setCursor({ line: cursor.line, ch: cursor.ch + taskText.length });
+  }
+
+  /**
+   * Insert a new event at cursor position
+   */
+  private insertEvent(editor: Editor, options: { withTime?: boolean } = {}): void {
+    const cursor = editor.getCursor();
+    let eventText = '- [o] ';
+
+    if (options.withTime) {
+      // Get current time rounded to nearest 30 minutes
+      const now = new Date();
+      const minutes = now.getMinutes();
+      const roundedMinutes = minutes < 30 ? '00' : '30';
+      const hours = String(now.getHours()).padStart(2, '0');
+      eventText += `${hours}:${roundedMinutes} `;
+    }
+
+    editor.replaceRange(eventText, cursor);
+    editor.setCursor({ line: cursor.line, ch: cursor.ch + eventText.length });
   }
 
   /**
