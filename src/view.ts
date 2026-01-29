@@ -894,8 +894,8 @@ export class BojoView extends ItemView {
 
     // Priority badge
     if (item.priority !== Priority.NONE) {
-      const priorityEl = metaEl.createSpan({ cls: 'bojo-item-priority' });
-      priorityEl.textContent = this.getPriorityEmoji(item.priority);
+      const priorityEl = metaEl.createSpan({ cls: `bojo-item-priority bojo-item-priority-${item.priority}` });
+      priorityEl.textContent = this.getPriorityIndicator(item.priority);
     }
 
     // Actions menu button
@@ -907,14 +907,14 @@ export class BojoView extends ItemView {
     actionsBtn.addEventListener('click', (e) => this.showItemMenu(e, item));
   }
 
-  private getPriorityEmoji(priority: Priority): string {
+  private getPriorityIndicator(priority: Priority): string {
     switch (priority) {
       case Priority.HIGH:
-        return '⏫';
+        return '!!!';
       case Priority.MEDIUM:
-        return '🔼';
+        return '!!';
       case Priority.LOW:
-        return '🔽';
+        return '!';
       default:
         return '';
     }
