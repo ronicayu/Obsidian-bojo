@@ -540,6 +540,18 @@ export class BojoView extends ItemView {
       groups[key].push(item);
     }
 
+    // Sort items within each group by priority, then document order
+    for (const key of Object.keys(groups)) {
+      groups[key].sort((a, b) => {
+        // First by priority (high to low)
+        const priorityDiff = b.priority - a.priority;
+        if (priorityDiff !== 0) return priorityDiff;
+        // Then by document order (file path, then line number)
+        const pathCompare = a.file.path.localeCompare(b.file.path);
+        return pathCompare !== 0 ? pathCompare : a.line - b.line;
+      });
+    }
+
     return groups;
   }
 
