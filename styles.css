@@ -632,6 +632,49 @@
   width: 100%;
 }
 
+/* Type selector (Task/Event) */
+.bojo-type-selector {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.bojo-type-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  background: var(--background-secondary);
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 0.9em;
+  transition: all 0.15s ease;
+  flex: 1;
+  justify-content: center;
+}
+
+.bojo-type-btn:hover {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
+.bojo-type-btn-active {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+  border-color: var(--interactive-accent);
+}
+
+.bojo-type-btn-active:hover {
+  background: var(--interactive-accent-hover);
+}
+
+.bojo-type-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
 /* Add button styling */
 .bojo-btn-add {
   background: var(--interactive-accent);

@@ -1237,16 +1237,16 @@ export class BojoView extends ItemView {
    * Show the add task modal
    */
   private showAddTaskModal(): void {
-    const modal = new AddTaskModal(this.app, this.plugin, async (taskText: string, targetDate: Date | null) => {
-      await this.addTask(taskText, targetDate);
+    const modal = new AddTaskModal(this.app, this.plugin, async (text: string, targetDate: Date | null, isEvent: boolean) => {
+      await this.addItem(text, targetDate, isEvent);
     });
     modal.open();
   }
 
   /**
-   * Add a new task to a daily note
+   * Add a new task or event to a daily note
    */
-  private async addTask(taskText: string, targetDate: Date | null): Promise<void> {
+  private async addItem(itemText: string, targetDate: Date | null, isEvent: boolean): Promise<void> {
     // Determine target date: use provided date, or current filter date, or today
     const date = targetDate || this.dailyNoteDate || new Date();
     
@@ -1263,9 +1263,11 @@ export class BojoView extends ItemView {
       return;
     }
 
-    // Create the task line
-    const taskMarker = this.plugin.settings.taskMarkers.task;
-    const taskLine = `- ${taskMarker} ${taskText}`;
+    // Create the item line with appropriate marker
+    const marker = isEvent 
+      ? this.plugin.settings.taskMarkers.event 
+      : this.plugin.settings.taskMarkers.task;
+    const itemLine = `- ${marker} ${itemText}`;
 
     // Read the target file content
     const targetContent = await this.app.vault.read(targetFile);
@@ -1279,15 +1281,15 @@ export class BojoView extends ItemView {
       // Find the heading and insert after it
       const insertIndex = this.findHeadingInsertIndex(lines, headingToFind);
       if (insertIndex !== -1) {
-        lines.splice(insertIndex, 0, taskLine);
+        lines.splice(insertIndex, 0, itemLine);
         newContent = lines.join('\n');
       } else {
-        // Heading not found, create it and add task
-        newContent = targetContent.trimEnd() + '\n\n' + headingToFind + '\n' + taskLine + '\n';
+        // Heading not found, create it and add item
+        newContent = targetContent.trimEnd() + '\n\n' + headingToFind + '\n' + itemLine + '\n';
       }
     } else {
       // No heading configured, append at end
-      newContent = targetContent.trimEnd() + '\n' + taskLine + '\n';
+      newContent = targetContent.trimEnd() + '\n' + itemLine + '\n';
     }
     
     await this.app.vault.modify(targetFile, newContent);
@@ -1297,7 +1299,8 @@ export class BojoView extends ItemView {
 
     const settings = getDailyNotesSettings(this.app);
     const dateStr = settings ? formatDate(date, settings.format) : date.toLocaleDateString();
-    new Notice(`Task added to ${dateStr}`);
+    const itemType = isEvent ? 'Event' : 'Task';
+    new Notice(`${itemType} added to ${dateStr}`);
   }
 }
 
@@ -1397,11 +1400,12 @@ class MigrateDatePickerModal extends Modal {
  */
 class AddTaskModal extends Modal {
   private plugin: BojoPlugin;
-  private onSubmit: (taskText: string, targetDate: Date | null) => void;
-  private taskText: string = '';
+  private onSubmit: (text: string, targetDate: Date | null, isEvent: boolean) => void;
+  private itemText: string = '';
   private targetDate: Date;
+  private isEvent: boolean = false;
 
-  constructor(app: any, plugin: BojoPlugin, onSubmit: (taskText: string, targetDate: Date | null) => void) {
+  constructor(app: any, plugin: BojoPlugin, onSubmit: (text: string, targetDate: Date | null, isEvent: boolean) => void) {
     super(app);
     this.plugin = plugin;
     this.onSubmit = onSubmit;
@@ -1414,24 +1418,51 @@ class AddTaskModal extends Modal {
     contentEl.empty();
     contentEl.addClass('bojo-add-task-modal');
 
-    contentEl.createEl('h2', { text: 'Add Task' });
+    contentEl.createEl('h2', { text: 'Add Item' });
 
-    // Task input
+    // Type selector (Task or Event)
+    const typeContainer = contentEl.createDiv({ cls: 'bojo-type-selector' });
+    
+    const taskBtn = typeContainer.createEl('button', {
+      text: 'Task',
+      cls: 'bojo-type-btn bojo-type-btn-active',
+    });
+    setIcon(taskBtn, 'check-square');
+    
+    const eventBtn = typeContainer.createEl('button', {
+      text: 'Event',
+      cls: 'bojo-type-btn',
+    });
+    setIcon(eventBtn, 'calendar');
+
+    taskBtn.addEventListener('click', () => {
+      this.isEvent = false;
+      taskBtn.addClass('bojo-type-btn-active');
+      eventBtn.removeClass('bojo-type-btn-active');
+    });
+
+    eventBtn.addEventListener('click', () => {
+      this.isEvent = true;
+      eventBtn.addClass('bojo-type-btn-active');
+      taskBtn.removeClass('bojo-type-btn-active');
+    });
+
+    // Item input
     new Setting(contentEl)
-      .setName('Task')
+      .setName('Description')
       .addText((text) => {
-        text.setPlaceholder('Enter task description...');
+        text.setPlaceholder('Enter description...');
         text.inputEl.addClass('bojo-task-input');
         text.onChange((value) => {
-          this.taskText = value;
+          this.itemText = value;
         });
         // Focus the input
         setTimeout(() => text.inputEl.focus(), 10);
         // Submit on Enter
         text.inputEl.addEventListener('keydown', (e) => {
-          if (e.key === 'Enter' && this.taskText.trim()) {
+          if (e.key === 'Enter' && this.itemText.trim()) {
             this.close();
-            this.onSubmit(this.taskText.trim(), this.targetDate);
+            this.onSubmit(this.itemText.trim(), this.targetDate, this.isEvent);
           }
         });
       });
@@ -1491,11 +1522,11 @@ class AddTaskModal extends Modal {
           .setButtonText('Add Task')
           .setCta()
           .onClick(() => {
-            if (this.taskText.trim()) {
+            if (this.itemText.trim()) {
               this.close();
-              this.onSubmit(this.taskText.trim(), this.targetDate);
+              this.onSubmit(this.itemText.trim(), this.targetDate, this.isEvent);
             } else {
-              new Notice('Please enter a task description');
+              new Notice('Please enter a description');
             }
           });
       })
