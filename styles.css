@@ -205,6 +205,21 @@
   background: var(--background-modifier-hover);
 }
 
+.bojo-group-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+.bojo-group-toggle svg {
+  width: 14px;
+  height: 14px;
+}
+
 .bojo-group-name {
   font-weight: 600;
   color: var(--text-normal);
@@ -217,6 +232,10 @@
 
 .bojo-group-items {
   padding-left: 0;
+}
+
+.bojo-group-collapsed .bojo-group-header {
+  border-bottom: none;
 }
 
 /* Items */

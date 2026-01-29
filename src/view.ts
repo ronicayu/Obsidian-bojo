@@ -31,6 +31,7 @@ export class BojoView extends ItemView {
   private filter: FilterCriteria;
   private refreshInterval: number | null = null;
   private dailyNoteDate: Date | null = null; // null = show all, Date = show specific day's daily note
+  private collapsedGroups: Set<string> = new Set(); // Track collapsed section names
 
   constructor(leaf: WorkspaceLeaf, plugin: BojoPlugin) {
     super(leaf);
@@ -191,32 +192,46 @@ export class BojoView extends ItemView {
     sorted.sort((a, b) => {
       switch (sortOrder) {
         case SortOrder.DUE_DATE:
-          if (!a.dueDate && !b.dueDate) return 0;
+          if (!a.dueDate && !b.dueDate) return this.compareByDocumentOrder(a, b);
           if (!a.dueDate) return 1;
           if (!b.dueDate) return -1;
-          return a.dueDate.getTime() - b.dueDate.getTime();
+          const dueDiff = a.dueDate.getTime() - b.dueDate.getTime();
+          return dueDiff !== 0 ? dueDiff : this.compareByDocumentOrder(a, b);
 
         case SortOrder.PRIORITY:
-          return b.priority - a.priority;
+          // Sort by priority first (high to low), then by document order
+          const priorityDiff = b.priority - a.priority;
+          return priorityDiff !== 0 ? priorityDiff : this.compareByDocumentOrder(a, b);
 
         case SortOrder.CREATED_DATE:
-          if (!a.createdDate && !b.createdDate) return 0;
+          if (!a.createdDate && !b.createdDate) return this.compareByDocumentOrder(a, b);
           if (!a.createdDate) return 1;
           if (!b.createdDate) return -1;
-          return b.createdDate.getTime() - a.createdDate.getTime();
+          const createdDiff = b.createdDate.getTime() - a.createdDate.getTime();
+          return createdDiff !== 0 ? createdDiff : this.compareByDocumentOrder(a, b);
 
         case SortOrder.FILE_NAME:
-          return a.file.basename.localeCompare(b.file.basename);
+          const fileDiff = a.file.basename.localeCompare(b.file.basename);
+          return fileDiff !== 0 ? fileDiff : a.line - b.line;
 
         case SortOrder.STATUS:
-          return this.getStatusOrder(a.signifier) - this.getStatusOrder(b.signifier);
+          const statusDiff = this.getStatusOrder(a.signifier) - this.getStatusOrder(b.signifier);
+          return statusDiff !== 0 ? statusDiff : this.compareByDocumentOrder(a, b);
 
         default:
-          return 0;
+          return this.compareByDocumentOrder(a, b);
       }
     });
 
     return sorted;
+  }
+
+  /**
+   * Compare two items by their document order (file path, then line number)
+   */
+  private compareByDocumentOrder(a: BujoItem, b: BujoItem): number {
+    const pathCompare = a.file.path.localeCompare(b.file.path);
+    return pathCompare !== 0 ? pathCompare : a.line - b.line;
   }
 
   private getStatusOrder(signifier: BujoSignifier): number {
@@ -531,21 +546,18 @@ export class BojoView extends ItemView {
   private getStatusLabel(signifier: BujoSignifier): string {
     switch (signifier) {
       case BujoSignifier.TASK:
+      case BujoSignifier.EVENT:
         return 'Open';
       case BujoSignifier.TASK_COMPLETE:
+      case BujoSignifier.EVENT_DONE:
         return 'Completed';
       case BujoSignifier.TASK_MIGRATED:
         return 'Migrated';
       case BujoSignifier.TASK_SCHEDULED:
         return 'Scheduled';
       case BujoSignifier.TASK_CANCELLED:
-        return 'Cancelled';
-      case BujoSignifier.EVENT:
-        return 'Event';
-      case BujoSignifier.EVENT_DONE:
-        return 'Event Done';
       case BujoSignifier.EVENT_CANCELLED:
-        return 'Event Cancelled';
+        return 'Cancelled';
       default:
         return 'Other';
     }
@@ -595,12 +607,36 @@ export class BojoView extends ItemView {
    * Render a group of items
    */
   private renderGroup(container: HTMLElement, name: string, items: BujoItem[]): void {
-    const group = container.createDiv({ cls: 'bojo-group' });
+    const isCollapsed = this.collapsedGroups.has(name);
+    const group = container.createDiv({ cls: `bojo-group ${isCollapsed ? 'bojo-group-collapsed' : ''}` });
+    
     const header = group.createDiv({ cls: 'bojo-group-header' });
+    
+    // Collapse/expand toggle icon
+    const toggleIcon = header.createSpan({ cls: 'bojo-group-toggle' });
+    setIcon(toggleIcon, isCollapsed ? 'chevron-right' : 'chevron-down');
+    
     header.createSpan({ text: name, cls: 'bojo-group-name' });
     header.createSpan({ text: `(${items.length})`, cls: 'bojo-group-count' });
 
+    // Make header clickable to toggle collapse
+    header.addEventListener('click', () => {
+      if (this.collapsedGroups.has(name)) {
+        this.collapsedGroups.delete(name);
+      } else {
+        this.collapsedGroups.add(name);
+      }
+      // Re-render just this group
+      const newIsCollapsed = this.collapsedGroups.has(name);
+      group.toggleClass('bojo-group-collapsed', newIsCollapsed);
+      setIcon(toggleIcon, newIsCollapsed ? 'chevron-right' : 'chevron-down');
+      itemsContainer.style.display = newIsCollapsed ? 'none' : '';
+    });
+
     const itemsContainer = group.createDiv({ cls: 'bojo-group-items' });
+    if (isCollapsed) {
+      itemsContainer.style.display = 'none';
+    }
     this.renderItems(itemsContainer, items);
   }
 
