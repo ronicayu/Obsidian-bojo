@@ -611,3 +611,33 @@
   color: var(--text-on-accent);
   border-color: var(--interactive-accent);
 }
+
+.bojo-quick-date-btn-active {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+  border-color: var(--interactive-accent);
+}
+
+/* Add Task Modal */
+.bojo-add-task-modal {
+  padding: 20px;
+}
+
+.bojo-add-task-modal h2 {
+  margin: 0 0 16px 0;
+  font-size: 1.2em;
+}
+
+.bojo-add-task-modal .bojo-task-input {
+  width: 100%;
+}
+
+/* Add button styling */
+.bojo-btn-add {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+}
+
+.bojo-btn-add:hover {
+  background: var(--interactive-accent-hover);
+}

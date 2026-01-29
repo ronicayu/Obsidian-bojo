@@ -318,6 +318,14 @@ export class BojoView extends ItemView {
       this.renderTodoList(container);
     });
 
+    // Add Task button
+    const addBtn = controls.createEl('button', {
+      cls: 'bojo-btn bojo-btn-add',
+      attr: { 'aria-label': 'Add Task' },
+    });
+    setIcon(addBtn, 'plus');
+    addBtn.addEventListener('click', () => this.showAddTaskModal());
+
     // Refresh button
     const refreshBtn = controls.createEl('button', {
       cls: 'bojo-btn bojo-btn-refresh',
@@ -1224,6 +1232,73 @@ export class BojoView extends ItemView {
     // No next heading found, insert at end
     return lines.length;
   }
+
+  /**
+   * Show the add task modal
+   */
+  private showAddTaskModal(): void {
+    const modal = new AddTaskModal(this.app, this.plugin, async (taskText: string, targetDate: Date | null) => {
+      await this.addTask(taskText, targetDate);
+    });
+    modal.open();
+  }
+
+  /**
+   * Add a new task to a daily note
+   */
+  private async addTask(taskText: string, targetDate: Date | null): Promise<void> {
+    // Determine target date: use provided date, or current filter date, or today
+    const date = targetDate || this.dailyNoteDate || new Date();
+    
+    // Check if daily notes is enabled
+    if (!isDailyNotesEnabled(this.app)) {
+      new Notice('Daily Notes plugin is not enabled');
+      return;
+    }
+
+    // Get or create the target daily note
+    const targetFile = await getOrCreateDailyNote(this.app, date);
+    if (!targetFile) {
+      new Notice('Could not create daily note');
+      return;
+    }
+
+    // Create the task line
+    const taskMarker = this.plugin.settings.taskMarkers.task;
+    const taskLine = `- ${taskMarker} ${taskText}`;
+
+    // Read the target file content
+    const targetContent = await this.app.vault.read(targetFile);
+    const lines = targetContent.split('\n');
+    
+    // Check if we have a configured heading to insert under
+    const headingToFind = this.plugin.settings.migrateToHeading.trim();
+    let newContent: string;
+    
+    if (headingToFind) {
+      // Find the heading and insert after it
+      const insertIndex = this.findHeadingInsertIndex(lines, headingToFind);
+      if (insertIndex !== -1) {
+        lines.splice(insertIndex, 0, taskLine);
+        newContent = lines.join('\n');
+      } else {
+        // Heading not found, create it and add task
+        newContent = targetContent.trimEnd() + '\n\n' + headingToFind + '\n' + taskLine + '\n';
+      }
+    } else {
+      // No heading configured, append at end
+      newContent = targetContent.trimEnd() + '\n' + taskLine + '\n';
+    }
+    
+    await this.app.vault.modify(targetFile, newContent);
+
+    // Refresh the view
+    await this.refresh();
+
+    const settings = getDailyNotesSettings(this.app);
+    const dateStr = settings ? formatDate(date, settings.format) : date.toLocaleDateString();
+    new Notice(`Task added to ${dateStr}`);
+  }
 }
 
 /**
@@ -1300,6 +1375,128 @@ class MigrateDatePickerModal extends Modal {
           .onClick(() => {
             this.close();
             this.onSubmit(this.selectedDate);
+          });
+      })
+      .addButton((btn) => {
+        btn
+          .setButtonText('Cancel')
+          .onClick(() => {
+            this.close();
+          });
+      });
+  }
+
+  onClose() {
+    const { contentEl } = this;
+    contentEl.empty();
+  }
+}
+
+/**
+ * Modal for adding a new task
+ */
+class AddTaskModal extends Modal {
+  private plugin: BojoPlugin;
+  private onSubmit: (taskText: string, targetDate: Date | null) => void;
+  private taskText: string = '';
+  private targetDate: Date;
+
+  constructor(app: any, plugin: BojoPlugin, onSubmit: (taskText: string, targetDate: Date | null) => void) {
+    super(app);
+    this.plugin = plugin;
+    this.onSubmit = onSubmit;
+    this.targetDate = new Date();
+    this.targetDate.setHours(0, 0, 0, 0);
+  }
+
+  onOpen() {
+    const { contentEl } = this;
+    contentEl.empty();
+    contentEl.addClass('bojo-add-task-modal');
+
+    contentEl.createEl('h2', { text: 'Add Task' });
+
+    // Task input
+    new Setting(contentEl)
+      .setName('Task')
+      .addText((text) => {
+        text.setPlaceholder('Enter task description...');
+        text.inputEl.addClass('bojo-task-input');
+        text.onChange((value) => {
+          this.taskText = value;
+        });
+        // Focus the input
+        setTimeout(() => text.inputEl.focus(), 10);
+        // Submit on Enter
+        text.inputEl.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' && this.taskText.trim()) {
+            this.close();
+            this.onSubmit(this.taskText.trim(), this.targetDate);
+          }
+        });
+      });
+
+    // Quick date buttons
+    const quickDatesContainer = contentEl.createDiv({ cls: 'bojo-quick-dates' });
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(0, 0, 0, 0);
+
+    const quickDates = [
+      { label: 'Today', date: today },
+      { label: 'Tomorrow', date: tomorrow },
+    ];
+
+    for (const { label, date } of quickDates) {
+      const isActive = this.targetDate.getTime() === date.getTime();
+      const btn = quickDatesContainer.createEl('button', { 
+        text: label,
+        cls: `bojo-quick-date-btn ${isActive ? 'bojo-quick-date-btn-active' : ''}`
+      });
+      btn.addEventListener('click', () => {
+        this.targetDate = date;
+        // Update active state
+        quickDatesContainer.querySelectorAll('.bojo-quick-date-btn').forEach(b => 
+          b.removeClass('bojo-quick-date-btn-active')
+        );
+        btn.addClass('bojo-quick-date-btn-active');
+      });
+    }
+
+    // Custom date picker
+    new Setting(contentEl)
+      .setName('Or choose a date')
+      .addText((text) => {
+        text.inputEl.type = 'date';
+        text.inputEl.valueAsDate = this.targetDate;
+        text.onChange((value) => {
+          if (value) {
+            this.targetDate = new Date(value + 'T00:00:00');
+            // Clear active state from quick buttons
+            quickDatesContainer.querySelectorAll('.bojo-quick-date-btn').forEach(b => 
+              b.removeClass('bojo-quick-date-btn-active')
+            );
+          }
+        });
+      });
+
+    // Submit button
+    new Setting(contentEl)
+      .addButton((btn) => {
+        btn
+          .setButtonText('Add Task')
+          .setCta()
+          .onClick(() => {
+            if (this.taskText.trim()) {
+              this.close();
+              this.onSubmit(this.taskText.trim(), this.targetDate);
+            } else {
+              new Notice('Please enter a task description');
+            }
           });
       })
       .addButton((btn) => {
