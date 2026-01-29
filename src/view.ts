@@ -113,6 +113,11 @@ export class BojoView extends ItemView {
         item.signifier !== BujoSignifier.EVENT_CANCELLED
       );
     }
+    if (!this.plugin.settings.showMigrated) {
+      filtered = filtered.filter((item) =>
+        item.signifier !== BujoSignifier.TASK_MIGRATED
+      );
+    }
     if (!this.plugin.settings.showEvents) {
       filtered = filtered.filter((item) =>
         item.signifier !== BujoSignifier.EVENT &&
@@ -227,6 +232,11 @@ export class BojoView extends ItemView {
    */
   private render(): void {
     const container = this.containerEl.children[1] as HTMLElement;
+    
+    // Preserve scroll position before re-rendering
+    const existingList = container.querySelector('.bojo-list') as HTMLElement;
+    const scrollTop = existingList?.scrollTop ?? 0;
+    
     container.empty();
     container.addClass('bojo-container');
 
@@ -238,6 +248,12 @@ export class BojoView extends ItemView {
 
     // Todo list
     this.renderTodoList(container);
+    
+    // Restore scroll position after re-rendering
+    const newList = container.querySelector('.bojo-list') as HTMLElement;
+    if (newList && scrollTop > 0) {
+      newList.scrollTop = scrollTop;
+    }
   }
 
   /**
@@ -660,6 +676,18 @@ export class BojoView extends ItemView {
         .setChecked(this.plugin.settings.showCancelled)
         .onClick(async () => {
           this.plugin.settings.showCancelled = !this.plugin.settings.showCancelled;
+          await this.plugin.saveSettings();
+          this.applyFilters();
+          this.render();
+        })
+    );
+
+    menu.addItem((item) =>
+      item
+        .setTitle('Show Migrated')
+        .setChecked(this.plugin.settings.showMigrated)
+        .onClick(async () => {
+          this.plugin.settings.showMigrated = !this.plugin.settings.showMigrated;
           await this.plugin.saveSettings();
           this.applyFilters();
           this.render();

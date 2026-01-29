@@ -88,6 +88,8 @@ export interface BojoSettings {
   showCompleted: boolean;
   /** Show cancelled tasks */
   showCancelled: boolean;
+  /** Show migrated tasks */
+  showMigrated: boolean;
   /** Show events */
   showEvents: boolean;
   /** Auto-refresh interval in seconds (0 = disabled) */
@@ -160,6 +162,7 @@ export const DEFAULT_SETTINGS: BojoSettings = {
   groupBy: GroupBy.FILE,
   showCompleted: false,
   showCancelled: false,
+  showMigrated: false,
   showEvents: true,
   autoRefreshInterval: 0,
   taskMarkers: {

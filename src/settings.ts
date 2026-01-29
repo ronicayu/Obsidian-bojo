@@ -134,6 +134,17 @@ export class BojoSettingTab extends PluginSettingTab {
         })
       );
 
+    // Show Migrated
+    new Setting(containerEl)
+      .setName('Show Migrated Tasks')
+      .setDesc('Display migrated tasks (tasks moved to future log) in the todo list')
+      .addToggle((toggle) =>
+        toggle.setValue(this.plugin.settings.showMigrated).onChange(async (value) => {
+          this.plugin.settings.showMigrated = value;
+          await this.plugin.saveSettings();
+        })
+      );
+
     // Show Events
     new Setting(containerEl)
       .setName('Show Events')
