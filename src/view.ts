@@ -532,21 +532,30 @@ export class BojoView extends ItemView {
   private renderStats(container: HTMLElement): void {
     const stats = container.createDiv({ cls: 'bojo-stats' });
 
-    const total = this.items.length;
-    const incomplete = this.items.filter((i) => i.signifier === BujoSignifier.TASK).length;
-    const complete = this.items.filter((i) => i.signifier === BujoSignifier.TASK_COMPLETE).length;
-    const events = this.items.filter((i) => this.isEventType(i.signifier)).length;
-    const pendingEvents = this.items.filter((i) => i.signifier === BujoSignifier.EVENT).length;
-    const overdue = this.items.filter(
+    // Count from filtered items to match displayed sections
+    const open = this.filteredItems.filter((i) => 
+      i.signifier === BujoSignifier.TASK || i.signifier === BujoSignifier.EVENT
+    ).length;
+    const completed = this.filteredItems.filter((i) => 
+      i.signifier === BujoSignifier.TASK_COMPLETE || i.signifier === BujoSignifier.EVENT_DONE
+    ).length;
+    const migrated = this.filteredItems.filter((i) => 
+      i.signifier === BujoSignifier.TASK_MIGRATED
+    ).length;
+    const cancelled = this.filteredItems.filter((i) => 
+      i.signifier === BujoSignifier.TASK_CANCELLED || i.signifier === BujoSignifier.EVENT_CANCELLED
+    ).length;
+    const overdue = this.filteredItems.filter(
       (i) => i.signifier === BujoSignifier.TASK && i.dueDate && i.dueDate < new Date()
     ).length;
 
     stats.innerHTML = `
-      <span class="bojo-stat"><strong>${incomplete}</strong> open</span>
-      <span class="bojo-stat"><strong>${complete}</strong> done</span>
-      ${pendingEvents > 0 ? `<span class="bojo-stat bojo-stat-events"><strong>${pendingEvents}</strong> events</span>` : ''}
+      <span class="bojo-stat"><strong>${open}</strong> open</span>
+      <span class="bojo-stat"><strong>${completed}</strong> done</span>
+      ${migrated > 0 ? `<span class="bojo-stat"><strong>${migrated}</strong> migrated</span>` : ''}
+      ${cancelled > 0 ? `<span class="bojo-stat"><strong>${cancelled}</strong> cancelled</span>` : ''}
       ${overdue > 0 ? `<span class="bojo-stat bojo-stat-overdue"><strong>${overdue}</strong> overdue</span>` : ''}
-      <span class="bojo-stat bojo-stat-total">${this.filteredItems.length} of ${total} shown</span>
+      <span class="bojo-stat bojo-stat-total">${this.filteredItems.length} total</span>
     `;
   }
 
