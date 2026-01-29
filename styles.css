@@ -16,10 +16,70 @@
 }
 
 .bojo-title {
-  margin: 0 0 12px 0;
+  margin: 0;
   font-size: 1.1em;
   font-weight: 600;
   color: var(--text-normal);
+}
+
+/* Title row with daily note controls */
+.bojo-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+/* Daily note filter controls */
+.bojo-daily-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.bojo-daily-btn {
+  padding: 4px 10px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  background: var(--background-primary);
+  color: var(--text-muted);
+  font-size: 0.8em;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.bojo-daily-btn:hover {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
+.bojo-daily-btn-active {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+  border-color: var(--interactive-accent);
+}
+
+.bojo-daily-btn-active:hover {
+  background: var(--interactive-accent-hover);
+}
+
+.bojo-daily-btn-picker {
+  padding: 4px 6px;
+}
+
+.bojo-daily-btn-picker svg {
+  width: 14px;
+  height: 14px;
+}
+
+.bojo-daily-date-label {
+  padding: 4px 8px;
+  font-size: 0.8em;
+  color: var(--text-accent);
+  background: var(--background-modifier-hover);
+  border-radius: 4px;
 }
 
 /* Controls */
@@ -497,4 +557,38 @@
 
 .bojo-list::-webkit-scrollbar-thumb:hover {
   background: var(--text-faint);
+}
+
+/* Migrate Modal */
+.bojo-migrate-modal {
+  padding: 20px;
+}
+
+.bojo-migrate-modal h2 {
+  margin: 0 0 16px 0;
+  font-size: 1.2em;
+}
+
+.bojo-quick-dates {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.bojo-quick-date-btn {
+  padding: 8px 16px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  background: var(--background-secondary);
+  color: var(--text-normal);
+  cursor: pointer;
+  font-size: 0.9em;
+  transition: all 0.15s ease;
+}
+
+.bojo-quick-date-btn:hover {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+  border-color: var(--interactive-accent);
 }

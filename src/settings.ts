@@ -185,6 +185,23 @@ export class BojoSettingTab extends PluginSettingTab {
           })
       );
 
+    // Migration Section
+    containerEl.createEl('h2', { text: 'Migration Settings' });
+
+    // Migrate to Heading
+    new Setting(containerEl)
+      .setName('Migrate to Heading')
+      .setDesc('Heading to insert migrated tasks under in daily notes (e.g., "## Tasks"). Leave empty to append at end of file.')
+      .addText((text) =>
+        text
+          .setPlaceholder('## Tasks')
+          .setValue(this.plugin.settings.migrateToHeading)
+          .onChange(async (value) => {
+            this.plugin.settings.migrateToHeading = value;
+            await this.plugin.saveSettings();
+          })
+      );
+
     // Task Markers Section
     containerEl.createEl('h2', { text: 'Task Markers' });
     containerEl.createEl('p', {

@@ -96,6 +96,8 @@ export interface BojoSettings {
   autoRefreshInterval: number;
   /** Custom task markers */
   taskMarkers: TaskMarkers;
+  /** Heading to migrate tasks under in daily notes (empty = append to end) */
+  migrateToHeading: string;
 }
 
 /**
@@ -175,4 +177,5 @@ export const DEFAULT_SETTINGS: BojoSettings = {
     eventDone: '[O]',
     eventCancelled: '[~]',
   },
+  migrateToHeading: '',
 };

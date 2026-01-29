@@ -5,6 +5,8 @@ import {
   TFile,
   Notice,
   setIcon,
+  Modal,
+  Setting,
 } from 'obsidian';
 import {
   BujoItem,
@@ -15,6 +17,7 @@ import {
   FilterCriteria,
 } from './types';
 import BojoPlugin from './main';
+import { getDailyNoteFile, getDailyNotesSettings, isDailyNotesEnabled, formatDate, getOrCreateDailyNote } from './dailyNotes';
 
 export const BOJO_VIEW_TYPE = 'bojo-todo-view';
 
@@ -27,6 +30,7 @@ export class BojoView extends ItemView {
   private filteredItems: BujoItem[] = [];
   private filter: FilterCriteria;
   private refreshInterval: number | null = null;
+  private dailyNoteDate: Date | null = null; // null = show all, Date = show specific day's daily note
 
   constructor(leaf: WorkspaceLeaf, plugin: BojoPlugin) {
     super(leaf);
@@ -124,6 +128,17 @@ export class BojoView extends ItemView {
         item.signifier !== BujoSignifier.EVENT_DONE &&
         item.signifier !== BujoSignifier.EVENT_CANCELLED
       );
+    }
+
+    // Filter by daily note date
+    if (this.dailyNoteDate) {
+      const dailyNoteFile = getDailyNoteFile(this.app, this.dailyNoteDate);
+      if (dailyNoteFile) {
+        filtered = filtered.filter((item) => item.file.path === dailyNoteFile.path);
+      } else {
+        // No daily note exists for this date, show nothing
+        filtered = [];
+      }
     }
 
     // Filter by search text
@@ -262,8 +277,14 @@ export class BojoView extends ItemView {
   private renderHeader(container: HTMLElement): void {
     const header = container.createDiv({ cls: 'bojo-header' });
 
-    // Title
-    header.createEl('h4', { text: 'Bullet Journal Todos', cls: 'bojo-title' });
+    // Title row with daily note controls
+    const titleRow = header.createDiv({ cls: 'bojo-title-row' });
+    titleRow.createEl('h4', { text: 'Bullet Journal Todos', cls: 'bojo-title' });
+
+    // Daily notes filter (if enabled)
+    if (isDailyNotesEnabled(this.app)) {
+      this.renderDailyNoteControls(titleRow);
+    }
 
     // Controls row
     const controls = header.createDiv({ cls: 'bojo-controls' });
@@ -297,6 +318,110 @@ export class BojoView extends ItemView {
     });
     setIcon(filterBtn, 'filter');
     filterBtn.addEventListener('click', (e) => this.showFilterMenu(e));
+  }
+
+  /**
+   * Render daily note filter controls
+   */
+  private renderDailyNoteControls(container: HTMLElement): void {
+    const dailyControls = container.createDiv({ cls: 'bojo-daily-controls' });
+
+    // "All" button
+    const allBtn = dailyControls.createEl('button', {
+      cls: `bojo-daily-btn ${this.dailyNoteDate === null ? 'bojo-daily-btn-active' : ''}`,
+      text: 'All',
+    });
+    allBtn.addEventListener('click', () => {
+      this.dailyNoteDate = null;
+      this.applyFilters();
+      this.render();
+    });
+
+    // "Today" button
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const isToday = this.dailyNoteDate?.getTime() === today.getTime();
+    
+    const todayBtn = dailyControls.createEl('button', {
+      cls: `bojo-daily-btn ${isToday ? 'bojo-daily-btn-active' : ''}`,
+      text: 'Today',
+    });
+    todayBtn.addEventListener('click', () => {
+      const newDate = new Date();
+      newDate.setHours(0, 0, 0, 0);
+      this.dailyNoteDate = newDate;
+      this.applyFilters();
+      this.render();
+    });
+
+    // Date picker button
+    const dateBtn = dailyControls.createEl('button', {
+      cls: 'bojo-daily-btn bojo-daily-btn-picker',
+      attr: { 'aria-label': 'Pick date' },
+    });
+    setIcon(dateBtn, 'calendar');
+    dateBtn.addEventListener('click', (e) => this.showDateMenu(e));
+
+    // Show current date if filtering by a specific date (not today)
+    if (this.dailyNoteDate && !isToday) {
+      const settings = getDailyNotesSettings(this.app);
+      const format = settings?.format || 'YYYY-MM-DD';
+      const dateLabel = dailyControls.createSpan({ 
+        cls: 'bojo-daily-date-label',
+        text: formatDate(this.dailyNoteDate, format),
+      });
+    }
+  }
+
+  /**
+   * Show date picker menu
+   */
+  private showDateMenu(e: MouseEvent): void {
+    const menu = new Menu();
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Yesterday
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    menu.addItem((item) =>
+      item.setTitle('Yesterday').onClick(() => {
+        this.dailyNoteDate = yesterday;
+        this.applyFilters();
+        this.render();
+      })
+    );
+
+    // Last 7 days
+    menu.addSeparator();
+    for (let i = 2; i <= 7; i++) {
+      const date = new Date(today);
+      date.setDate(date.getDate() - i);
+      const settings = getDailyNotesSettings(this.app);
+      const format = settings?.format || 'YYYY-MM-DD';
+      const label = formatDate(date, format);
+      
+      menu.addItem((item) =>
+        item.setTitle(label).onClick(() => {
+          this.dailyNoteDate = date;
+          this.applyFilters();
+          this.render();
+        })
+      );
+    }
+
+    menu.addSeparator();
+
+    // Clear filter
+    menu.addItem((item) =>
+      item.setTitle('Show All').onClick(() => {
+        this.dailyNoteDate = null;
+        this.applyFilters();
+        this.render();
+      })
+    );
+
+    menu.showAtMouseEvent(e);
   }
 
   /**
@@ -796,7 +921,7 @@ export class BojoView extends ItemView {
         menuItem
           .setTitle('Migrate (>)')
           .setIcon('arrow-right')
-          .onClick(() => this.updateItemStatus(item, BujoSignifier.TASK_MIGRATED))
+          .onClick(() => this.showMigrateDatePicker(item))
       );
 
       menu.addItem((menuItem) =>
@@ -933,5 +1058,213 @@ export class BojoView extends ItemView {
     await leaf.openFile(item.file, {
       eState: { line: item.line },
     });
+  }
+
+  /**
+   * Show date picker for migrating a task
+   */
+  private showMigrateDatePicker(item: BujoItem): void {
+    const modal = new MigrateDatePickerModal(this.app, async (date: Date) => {
+      await this.migrateTask(item, date);
+    });
+    modal.open();
+  }
+
+  /**
+   * Migrate a task to another daily note
+   * Creates a copy of the task in the target daily note and marks the original as migrated
+   */
+  private async migrateTask(item: BujoItem, targetDate: Date): Promise<void> {
+    // Check if daily notes is enabled
+    if (!isDailyNotesEnabled(this.app)) {
+      new Notice('Daily Notes plugin is not enabled');
+      return;
+    }
+
+    // Get or create the target daily note
+    const targetFile = await getOrCreateDailyNote(this.app, targetDate);
+    if (!targetFile) {
+      new Notice('Could not create daily note for the selected date');
+      return;
+    }
+
+    // Create the task line for the target file (as a fresh task)
+    const migratedItem = { ...item };
+    migratedItem.signifier = BujoSignifier.TASK; // Reset to pending task
+    const taskLine = this.plugin.parser.itemToMarkdown(migratedItem);
+
+    // Read the target file content
+    const targetContent = await this.app.vault.read(targetFile);
+    const lines = targetContent.split('\n');
+    
+    // Check if we have a configured heading to insert under
+    const headingToFind = this.plugin.settings.migrateToHeading.trim();
+    let newContent: string;
+    
+    if (headingToFind) {
+      // Find the heading and insert after it
+      const insertIndex = this.findHeadingInsertIndex(lines, headingToFind);
+      if (insertIndex !== -1) {
+        // Insert the task after the heading
+        lines.splice(insertIndex, 0, taskLine);
+        newContent = lines.join('\n');
+      } else {
+        // Heading not found, append at end
+        newContent = targetContent.trimEnd() + '\n\n' + headingToFind + '\n' + taskLine + '\n';
+      }
+    } else {
+      // No heading configured, append at end
+      newContent = targetContent.trimEnd() + '\n' + taskLine + '\n';
+    }
+    
+    await this.app.vault.modify(targetFile, newContent);
+
+    // Mark the original task as migrated
+    await this.updateItemStatus(item, BujoSignifier.TASK_MIGRATED);
+
+    const settings = getDailyNotesSettings(this.app);
+    const dateStr = settings ? formatDate(targetDate, settings.format) : targetDate.toLocaleDateString();
+    new Notice(`Task migrated to ${dateStr}`);
+  }
+
+  /**
+   * Find the index to insert content after a heading
+   * Returns the line index where content should be inserted (after the heading and any existing content under it)
+   * Returns -1 if heading is not found
+   */
+  private findHeadingInsertIndex(lines: string[], heading: string): number {
+    const headingLevel = (heading.match(/^#+/) || [''])[0].length;
+    const headingText = heading.replace(/^#+\s*/, '').trim().toLowerCase();
+    
+    let foundHeadingIndex = -1;
+    
+    // Find the heading
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const lineHeadingMatch = line.match(/^(#+)\s+(.*)$/);
+      
+      if (lineHeadingMatch) {
+        const lineLevel = lineHeadingMatch[1].length;
+        const lineText = lineHeadingMatch[2].trim().toLowerCase();
+        
+        if (lineLevel === headingLevel && lineText === headingText) {
+          foundHeadingIndex = i;
+          break;
+        }
+      }
+    }
+    
+    if (foundHeadingIndex === -1) {
+      return -1;
+    }
+    
+    // Find where to insert (after heading, before next same-or-higher-level heading)
+    // We want to insert at the end of the section, just before the next heading
+    for (let i = foundHeadingIndex + 1; i < lines.length; i++) {
+      const line = lines[i];
+      const lineHeadingMatch = line.match(/^(#+)\s+/);
+      
+      if (lineHeadingMatch) {
+        const lineLevel = lineHeadingMatch[1].length;
+        // If we hit a heading of same or higher level, insert before it
+        if (lineLevel <= headingLevel) {
+          return i;
+        }
+      }
+    }
+    
+    // No next heading found, insert at end
+    return lines.length;
+  }
+}
+
+/**
+ * Modal for selecting a date to migrate a task to
+ */
+class MigrateDatePickerModal extends Modal {
+  private onSubmit: (date: Date) => void;
+  private selectedDate: Date;
+
+  constructor(app: any, onSubmit: (date: Date) => void) {
+    super(app);
+    this.onSubmit = onSubmit;
+    // Default to tomorrow
+    this.selectedDate = new Date();
+    this.selectedDate.setDate(this.selectedDate.getDate() + 1);
+  }
+
+  onOpen() {
+    const { contentEl } = this;
+    contentEl.empty();
+    contentEl.addClass('bojo-migrate-modal');
+
+    contentEl.createEl('h2', { text: 'Migrate Task To' });
+
+    // Quick date buttons
+    const quickDatesContainer = contentEl.createDiv({ cls: 'bojo-quick-dates' });
+
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    
+    const nextWeek = new Date();
+    nextWeek.setDate(nextWeek.getDate() + 7);
+
+    const nextMonth = new Date();
+    nextMonth.setMonth(nextMonth.getMonth() + 1);
+
+    const quickDates = [
+      { label: 'Tomorrow', date: tomorrow },
+      { label: 'Next Week', date: nextWeek },
+      { label: 'Next Month', date: nextMonth },
+    ];
+
+    for (const { label, date } of quickDates) {
+      const btn = quickDatesContainer.createEl('button', { 
+        text: label,
+        cls: 'bojo-quick-date-btn'
+      });
+      btn.addEventListener('click', () => {
+        this.selectedDate = date;
+        this.close();
+        this.onSubmit(this.selectedDate);
+      });
+    }
+
+    // Custom date picker
+    new Setting(contentEl)
+      .setName('Or choose a specific date')
+      .addText((text) => {
+        text.inputEl.type = 'date';
+        text.inputEl.valueAsDate = this.selectedDate;
+        text.onChange((value) => {
+          if (value) {
+            this.selectedDate = new Date(value + 'T00:00:00');
+          }
+        });
+      });
+
+    // Submit button
+    new Setting(contentEl)
+      .addButton((btn) => {
+        btn
+          .setButtonText('Migrate')
+          .setCta()
+          .onClick(() => {
+            this.close();
+            this.onSubmit(this.selectedDate);
+          });
+      })
+      .addButton((btn) => {
+        btn
+          .setButtonText('Cancel')
+          .onClick(() => {
+            this.close();
+          });
+      });
+  }
+
+  onClose() {
+    const { contentEl } = this;
+    contentEl.empty();
   }
 }
