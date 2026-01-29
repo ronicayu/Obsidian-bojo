@@ -395,9 +395,10 @@ export class BojoView extends ItemView {
     const dateBtn = navGroup.createEl('button', {
       cls: `bojo-daily-btn bojo-daily-btn-date ${this.dailyNoteDate && !isToday ? 'bojo-daily-btn-active' : ''}`,
       text: displayDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-      attr: { 'aria-label': 'Pick date' },
+      attr: { 'aria-label': 'Pick date (double-click to open daily note)' },
     });
     dateBtn.addEventListener('click', () => this.showCalendarDropdown(dateBtn));
+    dateBtn.addEventListener('dblclick', () => this.openDailyNote(displayDate));
 
     // Next day button
     const nextBtn = navGroup.createEl('button', {
@@ -1223,6 +1224,38 @@ export class BojoView extends ItemView {
   }
 
   /**
+   * Open the daily note for a given date
+   * If it doesn't exist, prompt to create it
+   */
+  private async openDailyNote(date: Date): Promise<void> {
+    if (!isDailyNotesEnabled(this.app)) {
+      new Notice('Daily Notes plugin is not enabled');
+      return;
+    }
+
+    const existingFile = getDailyNoteFile(this.app, date);
+    const settings = getDailyNotesSettings(this.app);
+    const dateStr = settings ? formatDate(date, settings.format) : date.toLocaleDateString();
+
+    if (existingFile) {
+      // Open the existing daily note
+      const leaf = this.app.workspace.getLeaf(false);
+      await leaf.openFile(existingFile);
+    } else {
+      // Ask if user wants to create the daily note
+      const modal = new ConfirmCreateDailyNoteModal(this.app, dateStr, async () => {
+        const newFile = await getOrCreateDailyNote(this.app, date);
+        if (newFile) {
+          const leaf = this.app.workspace.getLeaf(false);
+          await leaf.openFile(newFile);
+          new Notice(`Created daily note: ${dateStr}`);
+        }
+      });
+      modal.open();
+    }
+  }
+
+  /**
    * Show date picker for migrating a task
    */
   private showMigrateDatePicker(item: BujoItem): void {
@@ -1679,6 +1712,54 @@ class AddTaskModal extends Modal {
             } else {
               new Notice('Please enter a description');
             }
+          });
+      })
+      .addButton((btn) => {
+        btn
+          .setButtonText('Cancel')
+          .onClick(() => {
+            this.close();
+          });
+      });
+  }
+
+  onClose() {
+    const { contentEl } = this;
+    contentEl.empty();
+  }
+}
+
+/**
+ * Modal to confirm creating a daily note
+ */
+class ConfirmCreateDailyNoteModal extends Modal {
+  private dateStr: string;
+  private onConfirm: () => void;
+
+  constructor(app: any, dateStr: string, onConfirm: () => void) {
+    super(app);
+    this.dateStr = dateStr;
+    this.onConfirm = onConfirm;
+  }
+
+  onOpen() {
+    const { contentEl } = this;
+    contentEl.empty();
+    contentEl.addClass('bojo-confirm-modal');
+
+    contentEl.createEl('h3', { text: 'Create Daily Note?' });
+    contentEl.createEl('p', { 
+      text: `No daily note exists for ${this.dateStr}. Would you like to create one?` 
+    });
+
+    new Setting(contentEl)
+      .addButton((btn) => {
+        btn
+          .setButtonText('Create')
+          .setCta()
+          .onClick(() => {
+            this.close();
+            this.onConfirm();
           });
       })
       .addButton((btn) => {
