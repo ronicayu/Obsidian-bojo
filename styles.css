@@ -498,7 +498,25 @@
 }
 
 .bojo-item-priority {
-  font-size: 1em;
+  font-size: 0.85em;
+  font-weight: 700;
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+
+.bojo-item-priority-3 {
+  color: var(--text-error);
+  background: rgba(var(--color-red-rgb), 0.15);
+}
+
+.bojo-item-priority-2 {
+  color: var(--color-orange, #d08800);
+  background: rgba(var(--color-orange-rgb, 208, 136, 0), 0.15);
+}
+
+.bojo-item-priority-1 {
+  color: var(--color-yellow, #b5a200);
+  background: rgba(var(--color-yellow-rgb, 181, 162, 0), 0.15);
 }
 
 /* Actions button */

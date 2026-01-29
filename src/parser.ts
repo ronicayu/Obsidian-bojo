@@ -303,16 +303,17 @@ export class BujoParser {
       content = content.replace(locationRegex, '').trim();
     }
 
-    // Extract priority (⏫ high, 🔼 medium, 🔽 low, or priority:high/medium/low)
-    if (text.includes('⏫') || /priority:\s*high/i.test(text)) {
+    // Extract priority (⏫ high, 🔼 medium, 🔽 low, !!!, !!, !, or priority:high/medium/low)
+    // Check !!! before !! before ! to avoid partial matches
+    if (text.includes('⏫') || /priority:\s*high/i.test(text) || /\s!!!(\s|$)/.test(text) || /^!!!(\s|$)/.test(text)) {
       priority = Priority.HIGH;
-      content = content.replace(/⏫|priority:\s*high/gi, '').trim();
-    } else if (text.includes('🔼') || /priority:\s*medium/i.test(text)) {
+      content = content.replace(/⏫|priority:\s*high/gi, '').replace(/\s*!!!(?=\s|$)/g, '').trim();
+    } else if (text.includes('🔼') || /priority:\s*medium/i.test(text) || /\s!!(\s|$)/.test(text) || /^!!(\s|$)/.test(text)) {
       priority = Priority.MEDIUM;
-      content = content.replace(/🔼|priority:\s*medium/gi, '').trim();
-    } else if (text.includes('🔽') || /priority:\s*low/i.test(text)) {
+      content = content.replace(/🔼|priority:\s*medium/gi, '').replace(/\s*!!(?=\s|$)/g, '').trim();
+    } else if (text.includes('🔽') || /priority:\s*low/i.test(text) || /\s!(\s|$)/.test(text) || /^!(\s|$)/.test(text)) {
       priority = Priority.LOW;
-      content = content.replace(/🔽|priority:\s*low/gi, '').trim();
+      content = content.replace(/🔽|priority:\s*low/gi, '').replace(/\s*!(?=\s|$)/g, '').trim();
     }
 
     // Extract recurrence (🔁 every day/week/month or recur:daily/weekly/monthly)
