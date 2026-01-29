@@ -35,7 +35,7 @@ export class BojoView extends ItemView {
     today.setHours(0, 0, 0, 0);
     return today;
   })(); // null = show all, Date = show specific day's daily note (defaults to today)
-  private collapsedGroups: Set<string> = new Set(); // Track collapsed section names
+  private collapsedGroups: Set<string> = new Set(['Completed', 'Migrated', 'Cancelled']); // Track collapsed section names (these are collapsed by default)
 
   constructor(leaf: WorkspaceLeaf, plugin: BojoPlugin) {
     super(leaf);
@@ -637,6 +637,24 @@ export class BojoView extends ItemView {
         const pathCompare = a.file.path.localeCompare(b.file.path);
         return pathCompare !== 0 ? pathCompare : a.line - b.line;
       });
+    }
+
+    // Order groups by status when grouping by status
+    if (groupBy === GroupBy.STATUS) {
+      const statusOrder = ['Open', 'Scheduled', 'Completed', 'Migrated', 'Cancelled', 'Other'];
+      const orderedGroups: Record<string, BujoItem[]> = {};
+      for (const status of statusOrder) {
+        if (groups[status]) {
+          orderedGroups[status] = groups[status];
+        }
+      }
+      // Add any remaining groups not in the predefined order
+      for (const key of Object.keys(groups)) {
+        if (!orderedGroups[key]) {
+          orderedGroups[key] = groups[key];
+        }
+      }
+      return orderedGroups;
     }
 
     return groups;
