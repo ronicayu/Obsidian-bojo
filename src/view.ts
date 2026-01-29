@@ -1120,8 +1120,8 @@ export class BojoView extends ItemView {
    * Show date picker for migrating a task
    */
   private showMigrateDatePicker(item: BujoItem): void {
-    const modal = new MigrateDatePickerModal(this.app, async (date: Date) => {
-      await this.migrateTask(item, date);
+    const modal = new MigrateDatePickerModal(this.app, async (date: Date, note: string) => {
+      await this.migrateTask(item, date, note);
     });
     modal.open();
   }
@@ -1129,8 +1129,9 @@ export class BojoView extends ItemView {
   /**
    * Migrate a task to another daily note
    * Creates a copy of the task in the target daily note and marks the original as migrated
+   * Optionally adds a note as a sub-bullet under the original task
    */
-  private async migrateTask(item: BujoItem, targetDate: Date): Promise<void> {
+  private async migrateTask(item: BujoItem, targetDate: Date, note: string = ''): Promise<void> {
     // Check if daily notes is enabled
     if (!isDailyNotesEnabled(this.app)) {
       new Notice('Daily Notes plugin is not enabled');
@@ -1178,9 +1179,42 @@ export class BojoView extends ItemView {
     // Mark the original task as migrated
     await this.updateItemStatus(item, BujoSignifier.TASK_MIGRATED);
 
+    // Add migration note as sub-bullet if provided
+    if (note) {
+      await this.addMigrationNote(item, note, targetDate);
+    }
+
     const settings = getDailyNotesSettings(this.app);
     const dateStr = settings ? formatDate(targetDate, settings.format) : targetDate.toLocaleDateString();
     new Notice(`Task migrated to ${dateStr}`);
+  }
+
+  /**
+   * Add a migration note as a sub-bullet under the original task
+   */
+  private async addMigrationNote(item: BujoItem, note: string, targetDate: Date): Promise<void> {
+    const file = item.file;
+    const content = await this.app.vault.read(file);
+    const lines = content.split('\n');
+    
+    // Get the indentation of the original task
+    const originalLine = lines[item.line];
+    const indentMatch = originalLine.match(/^(\s*)/);
+    const baseIndent = indentMatch ? indentMatch[1] : '';
+    
+    // Create sub-bullet with additional indentation (using tabs or spaces based on original)
+    const additionalIndent = baseIndent.includes('\t') ? '\t' : '  ';
+    const subIndent = baseIndent + additionalIndent;
+    
+    // Format the note with target date info
+    const settings = getDailyNotesSettings(this.app);
+    const dateStr = settings ? formatDate(targetDate, settings.format) : targetDate.toLocaleDateString();
+    const noteLine = `${subIndent}- Migrated to ${dateStr}: ${note}`;
+    
+    // Insert the note after the task line
+    lines.splice(item.line + 1, 0, noteLine);
+    
+    await this.app.vault.modify(file, lines.join('\n'));
   }
 
   /**
@@ -1308,10 +1342,11 @@ export class BojoView extends ItemView {
  * Modal for selecting a date to migrate a task to
  */
 class MigrateDatePickerModal extends Modal {
-  private onSubmit: (date: Date) => void;
+  private onSubmit: (date: Date, note: string) => void;
   private selectedDate: Date;
+  private note: string = '';
 
-  constructor(app: any, onSubmit: (date: Date) => void) {
+  constructor(app: any, onSubmit: (date: Date, note: string) => void) {
     super(app);
     this.onSubmit = onSubmit;
     // Default to tomorrow
@@ -1351,8 +1386,6 @@ class MigrateDatePickerModal extends Modal {
       });
       btn.addEventListener('click', () => {
         this.selectedDate = date;
-        this.close();
-        this.onSubmit(this.selectedDate);
       });
     }
 
@@ -1369,6 +1402,18 @@ class MigrateDatePickerModal extends Modal {
         });
       });
 
+    // Note field (optional)
+    new Setting(contentEl)
+      .setName('Note (optional)')
+      .setDesc('Add a reason for migrating this task')
+      .addTextArea((text) => {
+        text.setPlaceholder('Why is this task being migrated?');
+        text.onChange((value) => {
+          this.note = value;
+        });
+        text.inputEl.rows = 2;
+      });
+
     // Submit button
     new Setting(contentEl)
       .addButton((btn) => {
@@ -1377,7 +1422,7 @@ class MigrateDatePickerModal extends Modal {
           .setCta()
           .onClick(() => {
             this.close();
-            this.onSubmit(this.selectedDate);
+            this.onSubmit(this.selectedDate, this.note.trim());
           });
       })
       .addButton((btn) => {
