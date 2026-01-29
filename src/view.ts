@@ -30,7 +30,11 @@ export class BojoView extends ItemView {
   private filteredItems: BujoItem[] = [];
   private filter: FilterCriteria;
   private refreshInterval: number | null = null;
-  private dailyNoteDate: Date | null = null; // null = show all, Date = show specific day's daily note
+  private dailyNoteDate: Date | null = (() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return today;
+  })(); // null = show all, Date = show specific day's daily note (defaults to today)
   private collapsedGroups: Set<string> = new Set(); // Track collapsed section names
 
   constructor(leaf: WorkspaceLeaf, plugin: BojoPlugin) {
@@ -349,17 +353,6 @@ export class BojoView extends ItemView {
   private renderDailyNoteControls(container: HTMLElement): void {
     const dailyControls = container.createDiv({ cls: 'bojo-daily-controls' });
 
-    // "All" button
-    const allBtn = dailyControls.createEl('button', {
-      cls: `bojo-daily-btn ${this.dailyNoteDate === null ? 'bojo-daily-btn-active' : ''}`,
-      text: 'All',
-    });
-    allBtn.addEventListener('click', () => {
-      this.dailyNoteDate = null;
-      this.applyFilters();
-      this.render();
-    });
-
     // "Today" button
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -377,74 +370,160 @@ export class BojoView extends ItemView {
       this.render();
     });
 
-    // Date picker button
-    const dateBtn = dailyControls.createEl('button', {
-      cls: 'bojo-daily-btn bojo-daily-btn-picker',
+    // Date navigation group (always visible)
+    const navGroup = dailyControls.createDiv({ cls: 'bojo-date-nav' });
+    
+    // Display date: use selected date, or today if "All" is selected
+    const displayDate = this.dailyNoteDate ? new Date(this.dailyNoteDate) : new Date();
+    displayDate.setHours(0, 0, 0, 0);
+
+    // Previous day button
+    const prevBtn = navGroup.createEl('button', {
+      cls: 'bojo-daily-btn bojo-date-nav-btn',
+      attr: { 'aria-label': 'Previous day' },
+    });
+    setIcon(prevBtn, 'chevron-left');
+    prevBtn.addEventListener('click', () => {
+      const newDate = new Date(displayDate);
+      newDate.setDate(newDate.getDate() - 1);
+      this.dailyNoteDate = newDate;
+      this.applyFilters();
+      this.render();
+    });
+
+    // Date button (shows date, highlighted when not "All")
+    const dateBtn = navGroup.createEl('button', {
+      cls: `bojo-daily-btn bojo-daily-btn-date ${this.dailyNoteDate && !isToday ? 'bojo-daily-btn-active' : ''}`,
+      text: displayDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
       attr: { 'aria-label': 'Pick date' },
     });
-    setIcon(dateBtn, 'calendar');
-    dateBtn.addEventListener('click', (e) => this.showDateMenu(e));
+    dateBtn.addEventListener('click', () => this.showCalendarDropdown(dateBtn));
 
-    // Show current date if filtering by a specific date (not today)
-    if (this.dailyNoteDate && !isToday) {
-      const settings = getDailyNotesSettings(this.app);
-      const format = settings?.format || 'YYYY-MM-DD';
-      const dateLabel = dailyControls.createSpan({ 
-        cls: 'bojo-daily-date-label',
-        text: formatDate(this.dailyNoteDate, format),
-      });
-    }
+    // Next day button
+    const nextBtn = navGroup.createEl('button', {
+      cls: 'bojo-daily-btn bojo-date-nav-btn',
+      attr: { 'aria-label': 'Next day' },
+    });
+    setIcon(nextBtn, 'chevron-right');
+    nextBtn.addEventListener('click', () => {
+      const newDate = new Date(displayDate);
+      newDate.setDate(newDate.getDate() + 1);
+      this.dailyNoteDate = newDate;
+      this.applyFilters();
+      this.render();
+    });
+
+    // "All" button (at the end)
+    const allBtn = dailyControls.createEl('button', {
+      cls: `bojo-daily-btn ${this.dailyNoteDate === null ? 'bojo-daily-btn-active' : ''}`,
+      text: 'All',
+    });
+    allBtn.addEventListener('click', () => {
+      this.dailyNoteDate = null;
+      this.applyFilters();
+      this.render();
+    });
   }
 
   /**
-   * Show date picker menu
+   * Show calendar dropdown for date selection
    */
-  private showDateMenu(e: MouseEvent): void {
-    const menu = new Menu();
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+  private showCalendarDropdown(anchorEl: HTMLElement): void {
+    // Remove existing dropdown if any
+    const existing = document.querySelector('.bojo-calendar-dropdown');
+    if (existing) existing.remove();
 
-    // Yesterday
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-    menu.addItem((item) =>
-      item.setTitle('Yesterday').onClick(() => {
-        this.dailyNoteDate = yesterday;
-        this.applyFilters();
-        this.render();
-      })
-    );
+    const dropdown = document.body.createDiv({ cls: 'bojo-calendar-dropdown' });
 
-    // Last 7 days
-    menu.addSeparator();
-    for (let i = 2; i <= 7; i++) {
-      const date = new Date(today);
-      date.setDate(date.getDate() - i);
-      const settings = getDailyNotesSettings(this.app);
-      const format = settings?.format || 'YYYY-MM-DD';
-      const label = formatDate(date, format);
+    // Track displayed month (start with selected date or today)
+    let displayMonth = this.dailyNoteDate ? new Date(this.dailyNoteDate) : new Date();
+    displayMonth.setDate(1);
+
+    const renderCalendar = () => {
+      dropdown.empty();
       
-      menu.addItem((item) =>
-        item.setTitle(label).onClick(() => {
+      // Header with month/year and nav buttons
+      const header = dropdown.createDiv({ cls: 'bojo-calendar-header' });
+      const prevBtn = header.createEl('button', { text: '<', cls: 'bojo-calendar-nav' });
+      const title = header.createSpan({ 
+        text: displayMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
+        cls: 'bojo-calendar-title' 
+      });
+      const nextBtn = header.createEl('button', { text: '>', cls: 'bojo-calendar-nav' });
+
+      prevBtn.onclick = () => { displayMonth.setMonth(displayMonth.getMonth() - 1); renderCalendar(); };
+      nextBtn.onclick = () => { displayMonth.setMonth(displayMonth.getMonth() + 1); renderCalendar(); };
+
+      // Day labels
+      const daysRow = dropdown.createDiv({ cls: 'bojo-calendar-days' });
+      ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].forEach(d => 
+        daysRow.createSpan({ text: d, cls: 'bojo-calendar-day-label' })
+      );
+
+      // Calendar grid
+      const grid = dropdown.createDiv({ cls: 'bojo-calendar-grid' });
+      const year = displayMonth.getFullYear();
+      const month = displayMonth.getMonth();
+      const firstDay = new Date(year, month, 1).getDay();
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      const today = new Date(); today.setHours(0,0,0,0);
+
+      // Empty cells for days before month starts
+      for (let i = 0; i < firstDay; i++) {
+        grid.createDiv({ cls: 'bojo-calendar-cell bojo-calendar-empty' });
+      }
+
+      // Day cells
+      for (let day = 1; day <= daysInMonth; day++) {
+        const date = new Date(year, month, day);
+        const isToday = date.getTime() === today.getTime();
+        const isSelected = this.dailyNoteDate?.getTime() === date.getTime();
+        
+        const cell = grid.createDiv({ 
+          text: String(day), 
+          cls: `bojo-calendar-cell ${isToday ? 'bojo-calendar-today' : ''} ${isSelected ? 'bojo-calendar-selected' : ''}`
+        });
+        cell.onclick = () => {
           this.dailyNoteDate = date;
           this.applyFilters();
+          dropdown.remove();
           this.render();
-        })
-      );
+        };
+      }
+    };
+
+    renderCalendar();
+
+    // Position dropdown after rendering so dimensions are known
+    const rect = anchorEl.getBoundingClientRect();
+    const dropdownRect = dropdown.getBoundingClientRect();
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    const padding = 8;
+
+    // Calculate horizontal position (prefer left-aligned, but shift if overflows right)
+    let left = rect.left;
+    if (left + dropdownRect.width > viewportWidth - padding) {
+      left = Math.max(padding, viewportWidth - dropdownRect.width - padding);
     }
 
-    menu.addSeparator();
+    // Calculate vertical position (prefer below, but show above if overflows bottom)
+    let top = rect.bottom + 4;
+    if (top + dropdownRect.height > viewportHeight - padding) {
+      top = rect.top - dropdownRect.height - 4;
+    }
 
-    // Clear filter
-    menu.addItem((item) =>
-      item.setTitle('Show All').onClick(() => {
-        this.dailyNoteDate = null;
-        this.applyFilters();
-        this.render();
-      })
-    );
+    dropdown.style.top = `${top}px`;
+    dropdown.style.left = `${left}px`;
 
-    menu.showAtMouseEvent(e);
+    // Close on click outside
+    const closeHandler = (e: MouseEvent) => {
+      if (!dropdown.contains(e.target as Node) && e.target !== anchorEl) {
+        dropdown.remove();
+        document.removeEventListener('click', closeHandler);
+      }
+    };
+    setTimeout(() => document.addEventListener('click', closeHandler), 0);
   }
 
   /**

@@ -74,12 +74,39 @@
   height: 14px;
 }
 
-.bojo-daily-date-label {
-  padding: 4px 8px;
+/* Date navigation group */
+.bojo-date-nav {
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+
+.bojo-date-nav .bojo-daily-btn {
+  border-radius: 0;
+}
+
+.bojo-date-nav .bojo-daily-btn:first-child {
+  border-radius: 4px 0 0 4px;
+}
+
+.bojo-date-nav .bojo-daily-btn:last-child {
+  border-radius: 0 4px 4px 0;
+}
+
+.bojo-date-nav-btn {
+  padding: 4px 6px;
+}
+
+.bojo-date-nav-btn svg {
+  width: 14px;
+  height: 14px;
+}
+
+.bojo-daily-btn-date {
+  padding: 4px 10px;
   font-size: 0.8em;
-  color: var(--text-accent);
-  background: var(--background-modifier-hover);
-  border-radius: 4px;
+  min-width: 70px;
+  text-align: center;
 }
 
 /* Controls */
@@ -682,5 +709,87 @@
 }
 
 .bojo-btn-add:hover {
+  background: var(--interactive-accent-hover);
+}
+
+/* Calendar Dropdown */
+.bojo-calendar-dropdown {
+  position: fixed;
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+  padding: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  z-index: 1000;
+  width: 240px;
+}
+
+.bojo-calendar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.bojo-calendar-nav {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px 8px;
+  color: var(--text-muted);
+  border-radius: 4px;
+}
+
+.bojo-calendar-nav:hover {
+  color: var(--text-normal);
+  background: var(--background-modifier-hover);
+}
+
+.bojo-calendar-title {
+  font-weight: 600;
+}
+
+.bojo-calendar-days, .bojo-calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  text-align: center;
+}
+
+.bojo-calendar-day-label {
+  font-size: 0.75em;
+  color: var(--text-muted);
+  padding: 4px;
+}
+
+.bojo-calendar-cell {
+  padding: 6px;
+  cursor: pointer;
+  border-radius: 4px;
+  font-size: 0.85em;
+}
+
+.bojo-calendar-cell:hover {
+  background: var(--background-modifier-hover);
+}
+
+.bojo-calendar-empty {
+  cursor: default;
+}
+
+.bojo-calendar-empty:hover {
+  background: transparent;
+}
+
+.bojo-calendar-today {
+  border: 1px solid var(--interactive-accent);
+}
+
+.bojo-calendar-selected {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+}
+
+.bojo-calendar-selected:hover {
   background: var(--interactive-accent-hover);
 }
