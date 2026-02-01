@@ -7,6 +7,7 @@ import {
   setIcon,
   Modal,
   Setting,
+  moment,
 } from 'obsidian';
 import {
   BujoItem,
@@ -452,8 +453,8 @@ export class BojoView extends ItemView {
       });
       const nextBtn = header.createEl('button', { text: '>', cls: 'bojo-calendar-nav' });
 
-      prevBtn.onclick = () => { displayMonth.setMonth(displayMonth.getMonth() - 1); renderCalendar(); };
-      nextBtn.onclick = () => { displayMonth.setMonth(displayMonth.getMonth() + 1); renderCalendar(); };
+      prevBtn.onclick = (e) => { e.stopPropagation(); displayMonth.setMonth(displayMonth.getMonth() - 1); renderCalendar(); };
+      nextBtn.onclick = (e) => { e.stopPropagation(); displayMonth.setMonth(displayMonth.getMonth() + 1); renderCalendar(); };
 
       // Day labels
       const daysRow = dropdown.createDiv({ cls: 'bojo-calendar-days' });
@@ -1318,20 +1319,16 @@ export class BojoView extends ItemView {
     // Mark the original task as migrated
     await this.updateItemStatus(item, BujoSignifier.TASK_MIGRATED);
 
-    // Add migration note as sub-bullet if provided
-    if (note) {
-      await this.addMigrationNote(item, note, targetDate);
-    }
+    // Add link to target daily note as sub-bullet
+    await this.addMigrationLink(item, targetFile, targetDate, note);
 
-    const settings = getDailyNotesSettings(this.app);
-    const dateStr = settings ? formatDate(targetDate, settings.format) : targetDate.toLocaleDateString();
-    new Notice(`Task migrated to ${dateStr}`);
+    new Notice(`Task migrated to ${moment(targetDate).format('YYYY-MM-DD')}`);
   }
 
   /**
-   * Add a migration note as a sub-bullet under the original task
+   * Add a migration link as a sub-bullet under the original task
    */
-  private async addMigrationNote(item: BujoItem, note: string, targetDate: Date): Promise<void> {
+  private async addMigrationLink(item: BujoItem, targetFile: TFile, targetDate: Date, note: string = ''): Promise<void> {
     const file = item.file;
     const content = await this.app.vault.read(file);
     const lines = content.split('\n');
@@ -1345,13 +1342,18 @@ export class BojoView extends ItemView {
     const additionalIndent = baseIndent.includes('\t') ? '\t' : '  ';
     const subIndent = baseIndent + additionalIndent;
     
-    // Format the note with target date info
-    const settings = getDailyNotesSettings(this.app);
-    const dateStr = settings ? formatDate(targetDate, settings.format) : targetDate.toLocaleDateString();
-    const noteLine = `${subIndent}- Migrated to ${dateStr}: ${note}`;
+    // Format the link with display text as YYYY-MM-DD
+    const dateStr = moment(targetDate).format('YYYY-MM-DD');
+    // Use path without .md extension for the link
+    const filePath = targetFile.path.replace(/\.md$/, '');
     
-    // Insert the note after the task line
-    lines.splice(item.line + 1, 0, noteLine);
+    // Create link: [[path|display date]] with optional note
+    const linkText = note 
+      ? `${subIndent}- Migrated to [[${filePath}|${dateStr}]]: ${note}`
+      : `${subIndent}- Migrated to [[${filePath}|${dateStr}]]`;
+    
+    // Insert the link after the task line
+    lines.splice(item.line + 1, 0, linkText);
     
     await this.app.vault.modify(file, lines.join('\n'));
   }
