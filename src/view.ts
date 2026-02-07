@@ -1092,7 +1092,7 @@ export class BojoView extends ItemView {
         menuItem
           .setTitle('Schedule (<)')
           .setIcon('calendar')
-          .onClick(() => this.updateItemStatus(item, BujoSignifier.TASK_SCHEDULED))
+          .onClick(() => this.showScheduleDatePicker(item))
       );
 
       menu.addItem((menuItem) =>
@@ -1262,6 +1262,64 @@ export class BojoView extends ItemView {
   private showMigrateDatePicker(item: BujoItem): void {
     const modal = new MigrateDatePickerModal(this.app, async (date: Date, note: string) => {
       await this.migrateTask(item, date, note);
+    });
+    modal.open();
+  }
+
+  /**
+   * Show date picker for scheduling a task.
+   * Updates the original to [<] with the scheduled date and creates an open task copy in that date's daily note.
+   */
+  private showScheduleDatePicker(item: BujoItem): void {
+    const defaultDate = item.scheduledDate ? new Date(item.scheduledDate) : new Date();
+    defaultDate.setHours(0, 0, 0, 0);
+    const modal = new ScheduleDatePickerModal(this.app, defaultDate, async (date: Date) => {
+      date.setHours(0, 0, 0, 0);
+
+      if (!isDailyNotesEnabled(this.app)) {
+        new Notice('Daily Notes plugin is not enabled');
+        return;
+      }
+
+      const targetFile = await getOrCreateDailyNote(this.app, date);
+      if (!targetFile) {
+        new Notice('Could not create daily note for the selected date');
+        return;
+      }
+
+      // Copy for the target daily note: open task [ ] with scheduled date
+      const openCopy = { ...item };
+      openCopy.signifier = BujoSignifier.TASK;
+      openCopy.scheduledDate = date;
+      const taskLine = this.plugin.parser.itemToMarkdown(openCopy);
+
+      const targetContent = await this.app.vault.read(targetFile);
+      const lines = targetContent.split('\n');
+      const headingToFind = this.plugin.settings.migrateToHeading.trim();
+      let newContent: string;
+
+      if (headingToFind) {
+        const insertIndex = this.findHeadingInsertIndex(lines, headingToFind);
+        if (insertIndex !== -1) {
+          lines.splice(insertIndex, 0, taskLine);
+          newContent = lines.join('\n');
+        } else {
+          newContent = targetContent.trimEnd() + '\n\n' + headingToFind + '\n' + taskLine + '\n';
+        }
+      } else {
+        newContent = targetContent.trimEnd() + '\n' + taskLine + '\n';
+      }
+
+      await this.app.vault.modify(targetFile, newContent);
+
+      // Update the original task to [<] with scheduled date
+      const oldItem = { ...item };
+      item.signifier = BujoSignifier.TASK_SCHEDULED;
+      item.scheduledDate = date;
+      await this.updateItemInFile(oldItem, item);
+
+      await this.refresh();
+      new Notice(`Task scheduled for ${moment(date).format('YYYY-MM-DD')}`);
     });
     modal.open();
   }
@@ -1564,6 +1622,109 @@ class MigrateDatePickerModal extends Modal {
           .onClick(() => {
             this.close();
             this.onSubmit(this.selectedDate, this.note.trim());
+          });
+      })
+      .addButton((btn) => {
+        btn
+          .setButtonText('Cancel')
+          .onClick(() => {
+            this.close();
+          });
+      });
+  }
+
+  onClose() {
+    const { contentEl } = this;
+    contentEl.empty();
+  }
+}
+
+/**
+ * Modal for choosing a date when scheduling a task
+ */
+class ScheduleDatePickerModal extends Modal {
+  private onSubmit: (date: Date) => void;
+  private selectedDate: Date;
+  private dateInputEl: HTMLInputElement | null = null;
+
+  constructor(app: any, defaultDate: Date, onSubmit: (date: Date) => void) {
+    super(app);
+    this.onSubmit = onSubmit;
+    this.selectedDate = new Date(defaultDate);
+    this.selectedDate.setHours(0, 0, 0, 0);
+  }
+
+  onOpen() {
+    const { contentEl } = this;
+    contentEl.empty();
+    contentEl.addClass('bojo-schedule-modal');
+
+    contentEl.createEl('h2', { text: 'Schedule Task For' });
+
+    // Quick date buttons
+    const quickDatesContainer = contentEl.createDiv({ cls: 'bojo-quick-dates' });
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(0, 0, 0, 0);
+    const nextWeek = new Date();
+    nextWeek.setDate(nextWeek.getDate() + 7);
+    nextWeek.setHours(0, 0, 0, 0);
+
+    const quickDates = [
+      { label: 'Today', date: today },
+      { label: 'Tomorrow', date: tomorrow },
+      { label: 'Next Week', date: nextWeek },
+    ];
+
+    const updateDateInput = () => {
+      if (this.dateInputEl) {
+        const y = this.selectedDate.getFullYear();
+        const m = String(this.selectedDate.getMonth() + 1).padStart(2, '0');
+        const d = String(this.selectedDate.getDate()).padStart(2, '0');
+        this.dateInputEl.value = `${y}-${m}-${d}`;
+      }
+    };
+
+    for (const { label, date } of quickDates) {
+      const btn = quickDatesContainer.createEl('button', {
+        text: label,
+        cls: 'bojo-quick-date-btn',
+      });
+      btn.addEventListener('click', () => {
+        this.selectedDate = new Date(date);
+        updateDateInput();
+      });
+    }
+
+    // Custom date picker
+    new Setting(contentEl)
+      .setName('Or choose a specific date')
+      .addText((text) => {
+        text.inputEl.type = 'date';
+        const y = this.selectedDate.getFullYear();
+        const m = String(this.selectedDate.getMonth() + 1).padStart(2, '0');
+        const d = String(this.selectedDate.getDate()).padStart(2, '0');
+        text.inputEl.value = `${y}-${m}-${d}`;
+        this.dateInputEl = text.inputEl;
+        text.onChange((value) => {
+          if (value) {
+            this.selectedDate = new Date(value + 'T00:00:00');
+          }
+        });
+      });
+
+    // Submit button
+    new Setting(contentEl)
+      .addButton((btn) => {
+        btn
+          .setButtonText('Schedule')
+          .setCta()
+          .onClick(() => {
+            this.close();
+            this.onSubmit(this.selectedDate);
           });
       })
       .addButton((btn) => {

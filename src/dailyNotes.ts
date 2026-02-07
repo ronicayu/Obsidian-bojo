@@ -140,33 +140,41 @@ export async function getOrCreateDailyNote(app: App, date: Date): Promise<TFile 
     return null;
   }
   
-  // Ensure the folder exists
-  const folderPath = path.substring(0, path.lastIndexOf('/'));
-  if (folderPath) {
+  // Ensure the folder exists (only when path contains a directory)
+  const slashIndex = path.lastIndexOf('/');
+  if (slashIndex > 0) {
+    const folderPath = path.substring(0, slashIndex);
     const folder = app.vault.getAbstractFileByPath(folderPath);
     if (!folder) {
       await app.vault.createFolder(folderPath);
     }
   }
-  
+
   // Get template content if configured
   let content = '';
   if (settings.template) {
-    const templatePath = settings.template.endsWith('.md') 
-      ? settings.template 
+    const templatePath = settings.template.endsWith('.md')
+      ? settings.template
       : settings.template + '.md';
     const templateFile = app.vault.getAbstractFileByPath(templatePath);
     if (templateFile instanceof TFile) {
-      content = await app.vault.read(templateFile);
-      // Replace template variables
-      content = content
-        .replace(/{{date}}/g, formatDate(date, settings.format))
-        .replace(/{{title}}/g, formatDate(date, settings.format))
-        .replace(/{{time}}/g, moment(date).format('HH:mm'));
+      try {
+        content = await app.vault.read(templateFile);
+        content = content
+          .replace(/{{date}}/g, formatDate(date, settings.format))
+          .replace(/{{title}}/g, formatDate(date, settings.format))
+          .replace(/{{time}}/g, moment(date).format('HH:mm'));
+      } catch {
+        // Template read failed, continue with empty content
+      }
     }
   }
-  
-  // Create the file
-  const file = await app.vault.create(path, content);
-  return file;
+
+  try {
+    const file = await app.vault.create(path, content);
+    return file;
+  } catch (err) {
+    console.error('Failed to create daily note:', path, err);
+    return null;
+  }
 }

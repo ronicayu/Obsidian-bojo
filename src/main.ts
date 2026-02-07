@@ -7,11 +7,14 @@ import {
   MarkdownView,
   Editor,
   Notice,
+  Modal,
+  Setting,
 } from 'obsidian';
 import { BojoSettings, DEFAULT_SETTINGS, BujoSignifier } from './types';
 import { BujoParser } from './parser';
 import { BojoSettingTab } from './settings';
 import { BojoView, BOJO_VIEW_TYPE } from './view';
+import { getOrCreateDailyNote, isDailyNotesEnabled } from './dailyNotes';
 
 /**
  * Bullet Journal Todo Plugin for Obsidian
@@ -135,7 +138,7 @@ export default class BojoPlugin extends Plugin {
       id: 'schedule-task',
       name: 'Schedule Task (<)',
       editorCallback: (editor: Editor, view: MarkdownView) => {
-        this.toggleTaskAtCursor(editor, BujoSignifier.TASK_SCHEDULED);
+        this.scheduleTaskWithDatePicker(editor);
       },
     });
 
@@ -324,6 +327,91 @@ export default class BojoPlugin extends Plugin {
   }
 
   /**
+   * Show date picker and schedule the task at cursor (set [<] and add scheduled date)
+   */
+  private scheduleTaskWithDatePicker(editor: Editor): void {
+    const cursor = editor.getCursor();
+    const line = editor.getLine(cursor.line);
+
+    const checkboxRegex = /^(\s*[-*]\s+\[)([ xX><!oO~-])(\].*)$/;
+    const match = line.match(checkboxRegex);
+
+    if (!match) {
+      new Notice('No task or event found on current line');
+      return;
+    }
+
+    const [, prefix, , suffix] = match;
+    // Default to today; or existing scheduled date if present
+    const scheduledRegex = /(?:⏳|scheduled:)\s*(\d{4}-\d{2}-\d{2})/;
+    const scheduledMatch = suffix.match(scheduledRegex);
+    let defaultDate = new Date();
+    defaultDate.setHours(0, 0, 0, 0);
+    if (scheduledMatch) {
+      defaultDate = new Date(scheduledMatch[1]);
+      defaultDate.setHours(0, 0, 0, 0);
+    }
+
+    const modal = new ScheduleDatePickerModal(this.app, defaultDate, async (date: Date) => {
+      date.setHours(0, 0, 0, 0);
+      const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+      const suffixWithoutScheduled = suffix.replace(scheduledRegex, '').replace(/\s+/g, ' ').trim();
+      const newSuffix = suffixWithoutScheduled ? `${suffixWithoutScheduled} ⏳ ${dateStr}` : `⏳ ${dateStr}`;
+      const newLine = `${prefix}<] ${newSuffix}`;
+      editor.setLine(cursor.line, newLine);
+
+      // Create the date's daily note if missing and add an open task copy there
+      if (isDailyNotesEnabled(this.app)) {
+        const targetFile = await getOrCreateDailyNote(this.app, date);
+        if (targetFile) {
+          const openLine = `${prefix} ] ${newSuffix}`;
+          const targetContent = await this.app.vault.read(targetFile);
+          const lines = targetContent.split('\n');
+          const heading = this.settings.migrateToHeading.trim();
+          if (heading) {
+            const insertIndex = this.findHeadingInsertIndex(lines, heading);
+            if (insertIndex === -1) {
+              const newContent = targetContent.trimEnd() + '\n\n' + heading + '\n' + openLine + '\n';
+              await this.app.vault.modify(targetFile, newContent);
+            } else {
+              lines.splice(insertIndex, 0, openLine);
+              await this.app.vault.modify(targetFile, lines.join('\n'));
+            }
+          } else {
+            const newContent = targetContent.trimEnd() + '\n' + openLine + '\n';
+            await this.app.vault.modify(targetFile, newContent);
+          }
+        }
+      }
+
+      new Notice(`Scheduled for ${dateStr}`);
+    });
+    modal.open();
+  }
+
+  /**
+   * Find the line index to insert content after a heading. Returns -1 if heading not found.
+   */
+  private findHeadingInsertIndex(lines: string[], heading: string): number {
+    const headingLevel = (heading.match(/^#+/) || [''])[0].length;
+    const headingText = heading.replace(/^#+\s*/, '').trim().toLowerCase();
+    let foundIndex = -1;
+    for (let i = 0; i < lines.length; i++) {
+      const m = lines[i].match(/^(#+)\s+(.*)$/);
+      if (m && m[1].length === headingLevel && m[2].trim().toLowerCase() === headingText) {
+        foundIndex = i;
+        break;
+      }
+    }
+    if (foundIndex === -1) return -1;
+    for (let i = foundIndex + 1; i < lines.length; i++) {
+      const m = lines[i].match(/^(#+)\s+/);
+      if (m && m[1].length <= headingLevel) return i;
+    }
+    return lines.length;
+  }
+
+  /**
    * Insert a new task at cursor position
    */
   private insertTask(editor: Editor, options: { dueToday?: boolean; highPriority?: boolean } = {}): void {
@@ -426,5 +514,92 @@ export default class BojoPlugin extends Plugin {
         view.refresh();
       });
     }, 500);
+  }
+}
+
+/**
+ * Modal for choosing a date when scheduling a task (editor command)
+ */
+class ScheduleDatePickerModal extends Modal {
+  private onSubmit: (date: Date) => void;
+  private selectedDate: Date;
+  private dateInputEl: HTMLInputElement | null = null;
+
+  constructor(app: App, defaultDate: Date, onSubmit: (date: Date) => void) {
+    super(app);
+    this.onSubmit = onSubmit;
+    this.selectedDate = new Date(defaultDate);
+    this.selectedDate.setHours(0, 0, 0, 0);
+  }
+
+  onOpen(): void {
+    const { contentEl } = this;
+    contentEl.empty();
+    contentEl.addClass('bojo-schedule-modal');
+
+    contentEl.createEl('h2', { text: 'Schedule Task For' });
+
+    const quickDatesContainer = contentEl.createDiv({ cls: 'bojo-quick-dates' });
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(0, 0, 0, 0);
+    const nextWeek = new Date();
+    nextWeek.setDate(nextWeek.getDate() + 7);
+    nextWeek.setHours(0, 0, 0, 0);
+
+    const quickDates = [
+      { label: 'Today', date: today },
+      { label: 'Tomorrow', date: tomorrow },
+      { label: 'Next Week', date: nextWeek },
+    ];
+
+    const updateDateInput = (): void => {
+      if (this.dateInputEl) {
+        const y = this.selectedDate.getFullYear();
+        const m = String(this.selectedDate.getMonth() + 1).padStart(2, '0');
+        const d = String(this.selectedDate.getDate()).padStart(2, '0');
+        this.dateInputEl.value = `${y}-${m}-${d}`;
+      }
+    };
+
+    for (const { label, date } of quickDates) {
+      const btn = quickDatesContainer.createEl('button', { text: label, cls: 'bojo-quick-date-btn' });
+      btn.addEventListener('click', () => {
+        this.selectedDate = new Date(date);
+        updateDateInput();
+      });
+    }
+
+    new Setting(contentEl)
+      .setName('Or choose a specific date')
+      .addText((text) => {
+        text.inputEl.type = 'date';
+        const y = this.selectedDate.getFullYear();
+        const m = String(this.selectedDate.getMonth() + 1).padStart(2, '0');
+        const d = String(this.selectedDate.getDate()).padStart(2, '0');
+        text.inputEl.value = `${y}-${m}-${d}`;
+        this.dateInputEl = text.inputEl;
+        text.onChange((value) => {
+          if (value) this.selectedDate = new Date(value + 'T00:00:00');
+        });
+      });
+
+    new Setting(contentEl)
+      .addButton((btn) =>
+        btn.setButtonText('Schedule').setCta().onClick(() => {
+          this.close();
+          this.onSubmit(this.selectedDate);
+        })
+      )
+      .addButton((btn) =>
+        btn.setButtonText('Cancel').onClick(() => this.close())
+      );
+  }
+
+  onClose(): void {
+    this.contentEl.empty();
   }
 }

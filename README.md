@@ -148,7 +148,7 @@ The Bullet Journal method uses rapid logging with specific signifiers:
 
 When reviewing tasks, if a task wasn't completed:
 
-- **Migrate (>)**: Move it to next month/week's log
+- **Migrate (>)**: Move it to a specific date
 - **Schedule (<)**: Move it to a specific date
 
 ### Priority Signifiers
