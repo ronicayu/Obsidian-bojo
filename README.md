@@ -93,7 +93,7 @@ Access these commands via the command palette (Ctrl/Cmd + P):
 
 This plugin is not on Obsidian’s community list yet. Install it manually from GitHub:
 
-1. Go to the [Releases](https://github.com/ronica/Obsidian-bojo/releases) page and download the latest `obsidian-bojo-*.zip`.
+1. Go to the [Releases](https://github.com/ronicayu/Obsidian-bojo/releases) page and download the latest `obsidian-bojo-*.zip`.
 2. Extract the zip so that `main.js`, `manifest.json`, and `styles.css` are inside a folder named `obsidian-bojo`.
 3. Copy the `obsidian-bojo` folder into your vault at `.obsidian/plugins/`.
 4. In Obsidian, open **Settings** → **Community Plugins** and enable **Bullet Journal Todo**.
@@ -110,6 +110,14 @@ npm run dev
 # Production build
 npm run build
 ```
+
+### Pushing code
+
+- **Remote:** `origin` → `https://github.com/ronicayu/Obsidian-bojo.git`
+- **Push current branch:** `git push` (or `git push -u origin <branch>` first time for a new branch)
+- **Push main:** `git checkout main && git push -u origin main` (then set **main** as default branch in GitHub repo Settings if needed)
+
+If push fails with authentication errors, use a [GitHub personal access token](https://github.com/settings/tokens) (HTTPS) or set up [SSH keys](https://docs.github.com/en/authentication/connecting-to-github-with-ssh) and switch the remote to `git@github.com:ronicayu/Obsidian-bojo.git`.
 
 ## Releasing
 
