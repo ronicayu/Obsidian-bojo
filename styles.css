@@ -811,3 +811,148 @@
 .bojo-calendar-selected:hover {
   background: var(--interactive-accent-hover);
 }
+
+/* ===================================================
+   Bullet Journal Editor Checkboxes
+   Styles alternative checkboxes in the Obsidian editor
+   to visually match bullet journal signifiers.
+
+   Markers:
+     [ ] = open task (default Obsidian checkbox)
+     [x] = completed task   ✕
+     [>] = migrated task     ▸
+     [<] = scheduled task    ◂
+     [-] = cancelled task    —
+     [o] = event (pending)   ○
+     [O] = event (done)      ●
+     [~] = event (cancelled) ~
+   =================================================== */
+
+/* --- Reset checkbox appearance for all BuJo markers --- */
+body .task-list-item-checkbox[data-task="x"],
+body .task-list-item-checkbox[data-task=">"],
+body .task-list-item-checkbox[data-task="<"],
+body .task-list-item-checkbox[data-task="-"],
+body .task-list-item-checkbox[data-task="o"],
+body .task-list-item-checkbox[data-task="O"],
+body .task-list-item-checkbox[data-task="~"] {
+  -webkit-appearance: none;
+  appearance: none;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  width: 1.1em;
+  height: 1.1em;
+  position: relative;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Pseudo-element base for custom symbols */
+body .task-list-item-checkbox[data-task="x"]::after,
+body .task-list-item-checkbox[data-task=">"]::after,
+body .task-list-item-checkbox[data-task="<"]::after,
+body .task-list-item-checkbox[data-task="-"]::after,
+body .task-list-item-checkbox[data-task="o"]::after,
+body .task-list-item-checkbox[data-task="O"]::after,
+body .task-list-item-checkbox[data-task="~"]::after {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  line-height: 1;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* --- Completed task [x] --- */
+body .task-list-item-checkbox[data-task="x"]::after {
+  content: "✕";
+  color: var(--text-muted);
+  font-size: 0.9em;
+}
+
+.task-list-item[data-task="x"],
+li[data-task="x"] {
+  text-decoration: line-through;
+  color: var(--text-muted);
+}
+
+/* --- Migrated task [>] --- */
+body .task-list-item-checkbox[data-task=">"]::after {
+  content: "▸";
+  color: var(--text-accent);
+  font-size: 1.1em;
+}
+
+.task-list-item[data-task=">"],
+li[data-task=">"] {
+  color: var(--text-accent);
+}
+
+/* --- Scheduled task [<] --- */
+body .task-list-item-checkbox[data-task="<"]::after {
+  content: "◂";
+  color: var(--color-orange, #d08800);
+  font-size: 1.1em;
+}
+
+.task-list-item[data-task="<"],
+li[data-task="<"] {
+  color: var(--color-orange, #d08800);
+}
+
+/* --- Cancelled task [-] --- */
+body .task-list-item-checkbox[data-task="-"]::after {
+  content: "—";
+  color: var(--text-faint);
+  font-size: 1em;
+}
+
+.task-list-item[data-task="-"],
+li[data-task="-"] {
+  text-decoration: line-through;
+  color: var(--text-faint);
+}
+
+/* --- Event pending [o] --- */
+body .task-list-item-checkbox[data-task="o"]::after {
+  content: "○";
+  color: var(--text-accent);
+  font-size: 1.1em;
+}
+
+.task-list-item[data-task="o"],
+li[data-task="o"] {
+  color: var(--text-normal);
+}
+
+/* --- Event done [O] --- */
+body .task-list-item-checkbox[data-task="O"]::after {
+  content: "●";
+  color: var(--color-green, #08b94e);
+  font-size: 1em;
+}
+
+.task-list-item[data-task="O"],
+li[data-task="O"] {
+  color: var(--text-muted);
+}
+
+/* --- Event cancelled [~] --- */
+body .task-list-item-checkbox[data-task="~"]::after {
+  content: "~";
+  color: var(--text-faint);
+  font-size: 1.1em;
+}
+
+.task-list-item[data-task="~"],
+li[data-task="~"] {
+  text-decoration: line-through;
+  color: var(--text-faint);
+}
