@@ -1,0 +1,164 @@
+/*
+  Bullet Journal Checkboxes — Obsidian CSS Snippet
+  =================================================
+  Place this file in your vault at:
+    <your-vault>/.obsidian/snippets/bojo-checkboxes.css
+
+  Then enable it in:
+    Settings → Appearance → CSS snippets
+
+  Markers:
+    - [ ]  Open task       (default checkbox)
+    - [x]  Completed       ✕  strikethrough
+    - [>]  Migrated        ▸  accent color
+    - [<]  Scheduled       ◂  orange
+    - [-]  Cancelled       —  strikethrough
+    - [o]  Event           ○  accent color
+    - [O]  Event done      ●  green
+    - [~]  Event cancelled ~  strikethrough
+*/
+
+/* ------------------------------------------------- */
+/*  Reset default checkbox for all BuJo markers      */
+/* ------------------------------------------------- */
+body .task-list-item-checkbox[data-task="x"],
+body .task-list-item-checkbox[data-task=">"],
+body .task-list-item-checkbox[data-task="<"],
+body .task-list-item-checkbox[data-task="-"],
+body .task-list-item-checkbox[data-task="o"],
+body .task-list-item-checkbox[data-task="O"],
+body .task-list-item-checkbox[data-task="~"] {
+  -webkit-appearance: none;
+  appearance: none;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  width: 1.1em;
+  height: 1.1em;
+  position: relative;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Pseudo-element base for custom symbols */
+body .task-list-item-checkbox[data-task="x"]::after,
+body .task-list-item-checkbox[data-task=">"]::after,
+body .task-list-item-checkbox[data-task="<"]::after,
+body .task-list-item-checkbox[data-task="-"]::after,
+body .task-list-item-checkbox[data-task="o"]::after,
+body .task-list-item-checkbox[data-task="O"]::after,
+body .task-list-item-checkbox[data-task="~"]::after {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  line-height: 1;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* ------------------------------------------------- */
+/*  Completed task [x]  —  ✕ cross                   */
+/* ------------------------------------------------- */
+body .task-list-item-checkbox[data-task="x"]::after {
+  content: "✕";
+  color: var(--text-muted);
+  font-size: 0.9em;
+}
+
+.task-list-item[data-task="x"],
+li[data-task="x"] {
+  text-decoration: line-through;
+  color: var(--text-muted);
+}
+
+/* ------------------------------------------------- */
+/*  Migrated task [>]  —  ▸ right arrow              */
+/* ------------------------------------------------- */
+body .task-list-item-checkbox[data-task=">"]::after {
+  content: "▸";
+  color: var(--text-accent);
+  font-size: 1.1em;
+}
+
+.task-list-item[data-task=">"],
+li[data-task=">"] {
+  color: var(--text-accent);
+}
+
+/* ------------------------------------------------- */
+/*  Scheduled task [<]  —  ◂ left arrow              */
+/* ------------------------------------------------- */
+body .task-list-item-checkbox[data-task="<"]::after {
+  content: "◂";
+  color: var(--color-orange, #d08800);
+  font-size: 1.1em;
+}
+
+.task-list-item[data-task="<"],
+li[data-task="<"] {
+  color: var(--color-orange, #d08800);
+}
+
+/* ------------------------------------------------- */
+/*  Cancelled task [-]  —  em-dash                   */
+/* ------------------------------------------------- */
+body .task-list-item-checkbox[data-task="-"]::after {
+  content: "—";
+  color: var(--text-faint);
+  font-size: 1em;
+}
+
+.task-list-item[data-task="-"],
+li[data-task="-"] {
+  text-decoration: line-through;
+  color: var(--text-faint);
+}
+
+/* ------------------------------------------------- */
+/*  Event pending [o]  —  ○ open circle              */
+/* ------------------------------------------------- */
+body .task-list-item-checkbox[data-task="o"]::after {
+  content: "○";
+  color: var(--text-accent);
+  font-size: 1.1em;
+}
+
+.task-list-item[data-task="o"],
+li[data-task="o"] {
+  color: var(--text-normal);
+}
+
+/* ------------------------------------------------- */
+/*  Event done [O]  —  ● filled circle               */
+/* ------------------------------------------------- */
+body .task-list-item-checkbox[data-task="O"]::after {
+  content: "●";
+  color: var(--color-green, #08b94e);
+  font-size: 1em;
+}
+
+.task-list-item[data-task="O"],
+li[data-task="O"] {
+  color: var(--text-muted);
+}
+
+/* ------------------------------------------------- */
+/*  Event cancelled [~]  —  tilde                    */
+/* ------------------------------------------------- */
+body .task-list-item-checkbox[data-task="~"]::after {
+  content: "~";
+  color: var(--text-faint);
+  font-size: 1.1em;
+}
+
+.task-list-item[data-task="~"],
+li[data-task="~"] {
+  text-decoration: line-through;
+  color: var(--text-faint);
+}
