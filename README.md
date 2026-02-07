@@ -5,11 +5,12 @@ A plugin that helps you organize your todo list using the Bullet Journal methodo
 ## Features
 
 ### Task Collection
+
 - **Consolidate todos** from specified folders or individual files
 - **Filter and search** through all your tasks
-- **Group tasks** by file, folder, status, due date, priority, or tags
 
 ### Bullet Journal Actions
+
 - **Complete** (`[x]`) - Mark a task as done
 - **Migrate** (`[>]`) - Move a task forward to a future log
 - **Schedule** (`[<]`) - Move a task to your calendar
@@ -17,19 +18,21 @@ A plugin that helps you organize your todo list using the Bullet Journal methodo
 - **Event** (`[o]`) - Mark as an event (meeting, appointment)
 
 ### Events (Meetings)
+
 Track events like meetings and appointments with:
+
 - **Time**: `🕐 14:30` or `@14:30` or time ranges like `14:30-15:30`
 - **Location**: `📍 Conference Room` or `location:Conference Room`
 - Events are displayed with their time prominently shown
-- Filter events on/off in the view
 
 ### Task Metadata
+
 Support for rich task metadata:
+
 - **Due dates**: `📅 2024-01-15` or `due:2024-01-15`
 - **Scheduled dates**: `⏳ 2024-01-15` or `scheduled:2024-01-15`
 - **Created dates**: `➕ 2024-01-15` or `created:2024-01-15`
 - **Priority**: `⏫` (high), `🔼` (medium), `🔽` (low)
-- **Recurrence**: `🔁 every day` or `recur:daily`
 - **Tags**: `#project` `#work`
 
 ## Usage
@@ -86,15 +89,14 @@ Access these commands via the command palette (Ctrl/Cmd + P):
 
 ## Installation
 
-### From Obsidian Community Plugins
-1. Open Settings → Community Plugins
-2. Search for "Bullet Journal Todo"
-3. Click Install, then Enable
+**Requirements:** The core plugin **Daily notes** must be enabled (Settings → Core plugins → Daily notes).
 
-### Manual Installation
-1. Download the latest release
-2. Extract to your vault's `.obsidian/plugins/obsidian-bojo/` folder
-3. Enable the plugin in Settings → Community Plugins
+This plugin is not on Obsidian’s community list yet. Install it manually from GitHub:
+
+1. Go to the [Releases](https://github.com/ronica/Obsidian-bojo/releases) page and download the latest `obsidian-bojo-*.zip`.
+2. Extract the zip so that `main.js`, `manifest.json`, and `styles.css` are inside a folder named `obsidian-bojo`.
+3. Copy the `obsidian-bojo` folder into your vault at `.obsidian/plugins/`.
+4. In Obsidian, open **Settings** → **Community Plugins** and enable **Bullet Journal Todo**.
 
 ## Development
 
@@ -109,25 +111,40 @@ npm run dev
 npm run build
 ```
 
+## Releasing
+
+Releases are built automatically when you push a version tag. Others can download the plugin from the **Releases** page of this repo on GitHub.
+
+1. Bump version in `package.json` and `manifest.json` (e.g. to `1.0.1`).
+2. Commit, then create and push a tag:
+   ```bash
+   git tag v1.0.1
+   git push origin v1.0.1
+   ```
+3. GitHub Actions will build the plugin and create a release with a downloadable `obsidian-bojo-1.0.1.zip`. You can add release notes in the GitHub Releases UI.
+
 ## Bullet Journal Quick Reference
 
 The Bullet Journal method uses rapid logging with specific signifiers:
 
-| Symbol | Meaning |
-|--------|---------|
-| `- [ ]` | Task (incomplete) |
-| `- [x]` | Task complete |
+| Symbol  | Meaning                       |
+| ------- | ----------------------------- |
+| `- [ ]` | Task (incomplete)             |
+| `- [x]` | Task complete                 |
 | `- [>]` | Task migrated (moved forward) |
-| `- [<]` | Task scheduled (in calendar) |
-| `- [-]` | Task cancelled |
-| `- [o]` | Event (meeting, appointment) |
+| `- [<]` | Task scheduled (in calendar)  |
+| `- [-]` | Task cancelled                |
+| `- [o]` | Event (meeting, appointment)  |
 
 ### Migration
+
 When reviewing tasks, if a task wasn't completed:
+
 - **Migrate (>)**: Move it to next month/week's log
-- **Schedule (<)**: Move it to a specific date in your calendar
+- **Schedule (<)**: Move it to a specific date
 
 ### Priority Signifiers
+
 - `⏫` High priority
 - `🔼` Medium priority
 - `🔽` Low priority
