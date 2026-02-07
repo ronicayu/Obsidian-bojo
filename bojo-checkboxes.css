@@ -9,9 +9,9 @@
 
   Markers:
     - [ ]  Open task       (default checkbox)
-    - [x]  Completed       ✕  strikethrough
+    - [x]  Completed       ✓  green tick, strikethrough
     - [>]  Migrated        ▸  accent color
-    - [<]  Scheduled       ◂  orange
+    - [<]  Scheduled       📅  calendar icon
     - [-]  Cancelled       —  strikethrough
     - [o]  Event           ○  accent color
     - [O]  Event done      ●  green
@@ -129,14 +129,14 @@ body .markdown-preview-view .task-list-item-checkbox[data-task="~"]::after {
 }
 
 /* ------------------------------------------------- */
-/*  Completed task [x]  —  ✕ cross                   */
+/*  Completed task [x]  —  ✓ green tick              */
 /* ------------------------------------------------- */
 body .markdown-source-view.mod-cm6 .task-list-item-checkbox[data-task="x"]::after,
 body .markdown-rendered .task-list-item-checkbox[data-task="x"]::after,
 body .markdown-preview-view .task-list-item-checkbox[data-task="x"]::after {
-  content: "✕" !important;
-  color: var(--text-muted) !important;
-  font-size: 1em !important;
+  content: "✓" !important;
+  color: var(--color-green, #08b94e) !important;
+  font-size: 1.1em !important;
 }
 
 body .markdown-source-view.mod-cm6 li[data-task="x"] > .task-list-item-checkbox ~ *,
@@ -167,14 +167,14 @@ li[data-task=">"] {
 }
 
 /* ------------------------------------------------- */
-/*  Scheduled task [<]  —  ◂ left arrow              */
+/*  Scheduled task [<]  —  📅 calendar                */
 /* ------------------------------------------------- */
 body .markdown-source-view.mod-cm6 .task-list-item-checkbox[data-task="<"]::after,
 body .markdown-rendered .task-list-item-checkbox[data-task="<"]::after,
 body .markdown-preview-view .task-list-item-checkbox[data-task="<"]::after {
-  content: "◂" !important;
+  content: "📅" !important;
   color: var(--color-orange, #d08800) !important;
-  font-size: 1.2em !important;
+  font-size: 0.85em !important;
 }
 
 body .markdown-source-view.mod-cm6 .task-list-item[data-task="<"],
@@ -205,14 +205,14 @@ li[data-task="-"] {
 }
 
 /* ------------------------------------------------- */
-/*  Event pending [o]  —  ○ open circle              */
+/*  Event pending [o]  —  ○ open circle (large)      */
 /* ------------------------------------------------- */
 body .markdown-source-view.mod-cm6 .task-list-item-checkbox[data-task="o"]::after,
 body .markdown-rendered .task-list-item-checkbox[data-task="o"]::after,
 body .markdown-preview-view .task-list-item-checkbox[data-task="o"]::after {
   content: "○" !important;
   color: var(--text-accent) !important;
-  font-size: 1.2em !important;
+  font-size: 1.5em !important;
 }
 
 body .markdown-source-view.mod-cm6 .task-list-item[data-task="o"],
@@ -223,14 +223,14 @@ li[data-task="o"] {
 }
 
 /* ------------------------------------------------- */
-/*  Event done [O]  —  ● filled circle               */
+/*  Event done [O]  —  ● filled circle (large)        */
 /* ------------------------------------------------- */
 body .markdown-source-view.mod-cm6 .task-list-item-checkbox[data-task="O"]::after,
 body .markdown-rendered .task-list-item-checkbox[data-task="O"]::after,
 body .markdown-preview-view .task-list-item-checkbox[data-task="O"]::after {
   content: "●" !important;
   color: var(--color-green, #08b94e) !important;
-  font-size: 1em !important;
+  font-size: 1.5em !important;
 }
 
 body .markdown-source-view.mod-cm6 .task-list-item[data-task="O"],
