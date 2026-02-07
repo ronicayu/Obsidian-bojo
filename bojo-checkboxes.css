@@ -20,145 +20,242 @@
 
 /* ------------------------------------------------- */
 /*  Reset default checkbox for all BuJo markers      */
+/*  High-specificity selectors + !important to       */
+/*  override any theme (Catppuccin, FastPpuccin, etc) */
 /* ------------------------------------------------- */
-body .task-list-item-checkbox[data-task="x"],
-body .task-list-item-checkbox[data-task=">"],
-body .task-list-item-checkbox[data-task="<"],
-body .task-list-item-checkbox[data-task="-"],
-body .task-list-item-checkbox[data-task="o"],
-body .task-list-item-checkbox[data-task="O"],
-body .task-list-item-checkbox[data-task="~"] {
-  -webkit-appearance: none;
-  appearance: none;
-  border: none;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
-  width: 1.1em;
-  height: 1.1em;
-  position: relative;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+
+/* Live Preview (Source mode / CM6) */
+body .markdown-source-view.mod-cm6 .task-list-item-checkbox[data-task="x"],
+body .markdown-source-view.mod-cm6 .task-list-item-checkbox[data-task=">"],
+body .markdown-source-view.mod-cm6 .task-list-item-checkbox[data-task="<"],
+body .markdown-source-view.mod-cm6 .task-list-item-checkbox[data-task="-"],
+body .markdown-source-view.mod-cm6 .task-list-item-checkbox[data-task="o"],
+body .markdown-source-view.mod-cm6 .task-list-item-checkbox[data-task="O"],
+body .markdown-source-view.mod-cm6 .task-list-item-checkbox[data-task="~"],
+/* Reading mode */
+body .markdown-rendered .task-list-item-checkbox[data-task="x"],
+body .markdown-rendered .task-list-item-checkbox[data-task=">"],
+body .markdown-rendered .task-list-item-checkbox[data-task="<"],
+body .markdown-rendered .task-list-item-checkbox[data-task="-"],
+body .markdown-rendered .task-list-item-checkbox[data-task="o"],
+body .markdown-rendered .task-list-item-checkbox[data-task="O"],
+body .markdown-rendered .task-list-item-checkbox[data-task="~"],
+/* Fallback for .markdown-preview-view */
+body .markdown-preview-view .task-list-item-checkbox[data-task="x"],
+body .markdown-preview-view .task-list-item-checkbox[data-task=">"],
+body .markdown-preview-view .task-list-item-checkbox[data-task="<"],
+body .markdown-preview-view .task-list-item-checkbox[data-task="-"],
+body .markdown-preview-view .task-list-item-checkbox[data-task="o"],
+body .markdown-preview-view .task-list-item-checkbox[data-task="O"],
+body .markdown-preview-view .task-list-item-checkbox[data-task="~"] {
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  border: none !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  width: 1.25em !important;
+  height: 1.25em !important;
+  position: relative !important;
+  cursor: pointer !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
 }
 
-/* Pseudo-element base for custom symbols */
-body .task-list-item-checkbox[data-task="x"]::after,
-body .task-list-item-checkbox[data-task=">"]::after,
-body .task-list-item-checkbox[data-task="<"]::after,
-body .task-list-item-checkbox[data-task="-"]::after,
-body .task-list-item-checkbox[data-task="o"]::after,
-body .task-list-item-checkbox[data-task="O"]::after,
-body .task-list-item-checkbox[data-task="~"]::after {
-  position: absolute;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
-  line-height: 1;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+/* Kill any theme ::before pseudo-element on the checkbox */
+body .markdown-source-view.mod-cm6 .task-list-item-checkbox[data-task="x"]::before,
+body .markdown-source-view.mod-cm6 .task-list-item-checkbox[data-task=">"]::before,
+body .markdown-source-view.mod-cm6 .task-list-item-checkbox[data-task="<"]::before,
+body .markdown-source-view.mod-cm6 .task-list-item-checkbox[data-task="-"]::before,
+body .markdown-source-view.mod-cm6 .task-list-item-checkbox[data-task="o"]::before,
+body .markdown-source-view.mod-cm6 .task-list-item-checkbox[data-task="O"]::before,
+body .markdown-source-view.mod-cm6 .task-list-item-checkbox[data-task="~"]::before,
+body .markdown-rendered .task-list-item-checkbox[data-task="x"]::before,
+body .markdown-rendered .task-list-item-checkbox[data-task=">"]::before,
+body .markdown-rendered .task-list-item-checkbox[data-task="<"]::before,
+body .markdown-rendered .task-list-item-checkbox[data-task="-"]::before,
+body .markdown-rendered .task-list-item-checkbox[data-task="o"]::before,
+body .markdown-rendered .task-list-item-checkbox[data-task="O"]::before,
+body .markdown-rendered .task-list-item-checkbox[data-task="~"]::before,
+body .markdown-preview-view .task-list-item-checkbox[data-task="x"]::before,
+body .markdown-preview-view .task-list-item-checkbox[data-task=">"]::before,
+body .markdown-preview-view .task-list-item-checkbox[data-task="<"]::before,
+body .markdown-preview-view .task-list-item-checkbox[data-task="-"]::before,
+body .markdown-preview-view .task-list-item-checkbox[data-task="o"]::before,
+body .markdown-preview-view .task-list-item-checkbox[data-task="O"]::before,
+body .markdown-preview-view .task-list-item-checkbox[data-task="~"]::before {
+  content: "" !important;
+  display: none !important;
+}
+
+/* Pseudo-element base for our custom BuJo symbols */
+body .markdown-source-view.mod-cm6 .task-list-item-checkbox[data-task="x"]::after,
+body .markdown-source-view.mod-cm6 .task-list-item-checkbox[data-task=">"]::after,
+body .markdown-source-view.mod-cm6 .task-list-item-checkbox[data-task="<"]::after,
+body .markdown-source-view.mod-cm6 .task-list-item-checkbox[data-task="-"]::after,
+body .markdown-source-view.mod-cm6 .task-list-item-checkbox[data-task="o"]::after,
+body .markdown-source-view.mod-cm6 .task-list-item-checkbox[data-task="O"]::after,
+body .markdown-source-view.mod-cm6 .task-list-item-checkbox[data-task="~"]::after,
+body .markdown-rendered .task-list-item-checkbox[data-task="x"]::after,
+body .markdown-rendered .task-list-item-checkbox[data-task=">"]::after,
+body .markdown-rendered .task-list-item-checkbox[data-task="<"]::after,
+body .markdown-rendered .task-list-item-checkbox[data-task="-"]::after,
+body .markdown-rendered .task-list-item-checkbox[data-task="o"]::after,
+body .markdown-rendered .task-list-item-checkbox[data-task="O"]::after,
+body .markdown-rendered .task-list-item-checkbox[data-task="~"]::after,
+body .markdown-preview-view .task-list-item-checkbox[data-task="x"]::after,
+body .markdown-preview-view .task-list-item-checkbox[data-task=">"]::after,
+body .markdown-preview-view .task-list-item-checkbox[data-task="<"]::after,
+body .markdown-preview-view .task-list-item-checkbox[data-task="-"]::after,
+body .markdown-preview-view .task-list-item-checkbox[data-task="o"]::after,
+body .markdown-preview-view .task-list-item-checkbox[data-task="O"]::after,
+body .markdown-preview-view .task-list-item-checkbox[data-task="~"]::after {
+  position: absolute !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-weight: 700 !important;
+  line-height: 1 !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  background: transparent !important;
+  background-image: none !important;
+  border: none !important;
+  mask-image: none !important;
+  -webkit-mask-image: none !important;
 }
 
 /* ------------------------------------------------- */
 /*  Completed task [x]  —  ✕ cross                   */
 /* ------------------------------------------------- */
-body .task-list-item-checkbox[data-task="x"]::after {
-  content: "✕";
-  color: var(--text-muted);
-  font-size: 0.9em;
+body .markdown-source-view.mod-cm6 .task-list-item-checkbox[data-task="x"]::after,
+body .markdown-rendered .task-list-item-checkbox[data-task="x"]::after,
+body .markdown-preview-view .task-list-item-checkbox[data-task="x"]::after {
+  content: "✕" !important;
+  color: var(--text-muted) !important;
+  font-size: 1em !important;
 }
 
-.task-list-item[data-task="x"],
+body .markdown-source-view.mod-cm6 li[data-task="x"] > .task-list-item-checkbox ~ *,
+body .markdown-source-view.mod-cm6 .task-list-item[data-task="x"],
+body .markdown-rendered .task-list-item[data-task="x"],
+body .markdown-preview-view .task-list-item[data-task="x"],
 li[data-task="x"] {
-  text-decoration: line-through;
-  color: var(--text-muted);
+  text-decoration: line-through !important;
+  color: var(--text-muted) !important;
 }
 
 /* ------------------------------------------------- */
 /*  Migrated task [>]  —  ▸ right arrow              */
 /* ------------------------------------------------- */
-body .task-list-item-checkbox[data-task=">"]::after {
-  content: "▸";
-  color: var(--text-accent);
-  font-size: 1.1em;
+body .markdown-source-view.mod-cm6 .task-list-item-checkbox[data-task=">"]::after,
+body .markdown-rendered .task-list-item-checkbox[data-task=">"]::after,
+body .markdown-preview-view .task-list-item-checkbox[data-task=">"]::after {
+  content: "▸" !important;
+  color: var(--text-accent) !important;
+  font-size: 1.2em !important;
 }
 
-.task-list-item[data-task=">"],
+body .markdown-source-view.mod-cm6 .task-list-item[data-task=">"],
+body .markdown-rendered .task-list-item[data-task=">"],
+body .markdown-preview-view .task-list-item[data-task=">"],
 li[data-task=">"] {
-  color: var(--text-accent);
+  color: var(--text-accent) !important;
 }
 
 /* ------------------------------------------------- */
 /*  Scheduled task [<]  —  ◂ left arrow              */
 /* ------------------------------------------------- */
-body .task-list-item-checkbox[data-task="<"]::after {
-  content: "◂";
-  color: var(--color-orange, #d08800);
-  font-size: 1.1em;
+body .markdown-source-view.mod-cm6 .task-list-item-checkbox[data-task="<"]::after,
+body .markdown-rendered .task-list-item-checkbox[data-task="<"]::after,
+body .markdown-preview-view .task-list-item-checkbox[data-task="<"]::after {
+  content: "◂" !important;
+  color: var(--color-orange, #d08800) !important;
+  font-size: 1.2em !important;
 }
 
-.task-list-item[data-task="<"],
+body .markdown-source-view.mod-cm6 .task-list-item[data-task="<"],
+body .markdown-rendered .task-list-item[data-task="<"],
+body .markdown-preview-view .task-list-item[data-task="<"],
 li[data-task="<"] {
-  color: var(--color-orange, #d08800);
+  color: var(--color-orange, #d08800) !important;
 }
 
 /* ------------------------------------------------- */
 /*  Cancelled task [-]  —  em-dash                   */
 /* ------------------------------------------------- */
-body .task-list-item-checkbox[data-task="-"]::after {
-  content: "—";
-  color: var(--text-faint);
-  font-size: 1em;
+body .markdown-source-view.mod-cm6 .task-list-item-checkbox[data-task="-"]::after,
+body .markdown-rendered .task-list-item-checkbox[data-task="-"]::after,
+body .markdown-preview-view .task-list-item-checkbox[data-task="-"]::after {
+  content: "—" !important;
+  color: var(--text-faint) !important;
+  font-size: 1em !important;
 }
 
-.task-list-item[data-task="-"],
+body .markdown-source-view.mod-cm6 li[data-task="-"] > .task-list-item-checkbox ~ *,
+body .markdown-source-view.mod-cm6 .task-list-item[data-task="-"],
+body .markdown-rendered .task-list-item[data-task="-"],
+body .markdown-preview-view .task-list-item[data-task="-"],
 li[data-task="-"] {
-  text-decoration: line-through;
-  color: var(--text-faint);
+  text-decoration: line-through !important;
+  color: var(--text-faint) !important;
 }
 
 /* ------------------------------------------------- */
 /*  Event pending [o]  —  ○ open circle              */
 /* ------------------------------------------------- */
-body .task-list-item-checkbox[data-task="o"]::after {
-  content: "○";
-  color: var(--text-accent);
-  font-size: 1.1em;
+body .markdown-source-view.mod-cm6 .task-list-item-checkbox[data-task="o"]::after,
+body .markdown-rendered .task-list-item-checkbox[data-task="o"]::after,
+body .markdown-preview-view .task-list-item-checkbox[data-task="o"]::after {
+  content: "○" !important;
+  color: var(--text-accent) !important;
+  font-size: 1.2em !important;
 }
 
-.task-list-item[data-task="o"],
+body .markdown-source-view.mod-cm6 .task-list-item[data-task="o"],
+body .markdown-rendered .task-list-item[data-task="o"],
+body .markdown-preview-view .task-list-item[data-task="o"],
 li[data-task="o"] {
-  color: var(--text-normal);
+  color: var(--text-normal) !important;
 }
 
 /* ------------------------------------------------- */
 /*  Event done [O]  —  ● filled circle               */
 /* ------------------------------------------------- */
-body .task-list-item-checkbox[data-task="O"]::after {
-  content: "●";
-  color: var(--color-green, #08b94e);
-  font-size: 1em;
+body .markdown-source-view.mod-cm6 .task-list-item-checkbox[data-task="O"]::after,
+body .markdown-rendered .task-list-item-checkbox[data-task="O"]::after,
+body .markdown-preview-view .task-list-item-checkbox[data-task="O"]::after {
+  content: "●" !important;
+  color: var(--color-green, #08b94e) !important;
+  font-size: 1em !important;
 }
 
-.task-list-item[data-task="O"],
+body .markdown-source-view.mod-cm6 .task-list-item[data-task="O"],
+body .markdown-rendered .task-list-item[data-task="O"],
+body .markdown-preview-view .task-list-item[data-task="O"],
 li[data-task="O"] {
-  color: var(--text-muted);
+  color: var(--text-muted) !important;
 }
 
 /* ------------------------------------------------- */
 /*  Event cancelled [~]  —  tilde                    */
 /* ------------------------------------------------- */
-body .task-list-item-checkbox[data-task="~"]::after {
-  content: "~";
-  color: var(--text-faint);
-  font-size: 1.1em;
+body .markdown-source-view.mod-cm6 .task-list-item-checkbox[data-task="~"]::after,
+body .markdown-rendered .task-list-item-checkbox[data-task="~"]::after,
+body .markdown-preview-view .task-list-item-checkbox[data-task="~"]::after {
+  content: "~" !important;
+  color: var(--text-faint) !important;
+  font-size: 1.2em !important;
 }
 
-.task-list-item[data-task="~"],
+body .markdown-source-view.mod-cm6 li[data-task="~"] > .task-list-item-checkbox ~ *,
+body .markdown-source-view.mod-cm6 .task-list-item[data-task="~"],
+body .markdown-rendered .task-list-item[data-task="~"],
+body .markdown-preview-view .task-list-item[data-task="~"],
 li[data-task="~"] {
-  text-decoration: line-through;
-  color: var(--text-faint);
+  text-decoration: line-through !important;
+  color: var(--text-faint) !important;
 }
