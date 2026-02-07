@@ -130,6 +130,8 @@ body .markdown-source-view.mod-cm6 .task-list-item-checkbox[data-task="~"]::afte
 /* ================================================================ */
 
 /* Reset checkbox appearance — ultra-high specificity */
+body .markdown-reading-view .markdown-preview-view li.task-list-item[data-task=""] > input.task-list-item-checkbox,
+body .markdown-reading-view .markdown-preview-view li.task-list-item[data-task=" "] > input.task-list-item-checkbox,
 body .markdown-reading-view .markdown-preview-view li.task-list-item[data-task="x"] > input.task-list-item-checkbox,
 body .markdown-reading-view .markdown-preview-view li.task-list-item[data-task=">"] > input.task-list-item-checkbox,
 body .markdown-reading-view .markdown-preview-view li.task-list-item[data-task="<"] > input.task-list-item-checkbox,
@@ -156,6 +158,8 @@ body .markdown-reading-view .markdown-preview-view li.task-list-item[data-task="
 }
 
 /* Kill theme ::before on the checkbox */
+body .markdown-reading-view .markdown-preview-view li.task-list-item[data-task=""] > input.task-list-item-checkbox::before,
+body .markdown-reading-view .markdown-preview-view li.task-list-item[data-task=" "] > input.task-list-item-checkbox::before,
 body .markdown-reading-view .markdown-preview-view li.task-list-item[data-task="x"] > input.task-list-item-checkbox::before,
 body .markdown-reading-view .markdown-preview-view li.task-list-item[data-task=">"] > input.task-list-item-checkbox::before,
 body .markdown-reading-view .markdown-preview-view li.task-list-item[data-task="<"] > input.task-list-item-checkbox::before,
@@ -172,6 +176,8 @@ body .markdown-reading-view .markdown-preview-view li.task-list-item[data-task="
 }
 
 /* Also kill the .list-bullet span that may render a theme icon */
+body .markdown-reading-view .markdown-preview-view li.task-list-item[data-task=""] > span.list-bullet,
+body .markdown-reading-view .markdown-preview-view li.task-list-item[data-task=" "] > span.list-bullet,
 body .markdown-reading-view .markdown-preview-view li.task-list-item[data-task="x"] > span.list-bullet,
 body .markdown-reading-view .markdown-preview-view li.task-list-item[data-task=">"] > span.list-bullet,
 body .markdown-reading-view .markdown-preview-view li.task-list-item[data-task="<"] > span.list-bullet,
@@ -183,6 +189,8 @@ body .markdown-reading-view .markdown-preview-view li.task-list-item[data-task="
 }
 
 /* ::after base for BuJo symbols */
+body .markdown-reading-view .markdown-preview-view li.task-list-item[data-task=""] > input.task-list-item-checkbox::after,
+body .markdown-reading-view .markdown-preview-view li.task-list-item[data-task=" "] > input.task-list-item-checkbox::after,
 body .markdown-reading-view .markdown-preview-view li.task-list-item[data-task="x"] > input.task-list-item-checkbox::after,
 body .markdown-reading-view .markdown-preview-view li.task-list-item[data-task=">"] > input.task-list-item-checkbox::after,
 body .markdown-reading-view .markdown-preview-view li.task-list-item[data-task="<"] > input.task-list-item-checkbox::after,
@@ -207,6 +215,11 @@ body .markdown-reading-view .markdown-preview-view li.task-list-item[data-task="
 }
 
 /* Reading mode symbols */
+body .markdown-reading-view .markdown-preview-view li.task-list-item[data-task=""] > input.task-list-item-checkbox::after,
+body .markdown-reading-view .markdown-preview-view li.task-list-item[data-task=" "] > input.task-list-item-checkbox::after {
+  /* Default unchecked — no symbol needed */
+  content: "" !important;
+}
 body .markdown-reading-view .markdown-preview-view li.task-list-item[data-task="x"] > input.task-list-item-checkbox::after {
   content: "✓" !important;
   color: var(--color-green, #08b94e) !important;
